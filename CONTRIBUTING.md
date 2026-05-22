@@ -1,34 +1,27 @@
-> **Customize this file**: Tailor this template to your project by noting specific contribution types you're looking for, adding a Code of Conduct, or adjusting the writing guidelines to match your style.
+# Contributing
 
-# Contribute to the documentation
+Before writing anything, read [`CLAUDE.md`](./CLAUDE.md). It carries the product vocabulary, the public-surface inventory, the content boundaries, and the writing and IA rules (distilled from DR 018 and DR 019). The points below are the short version.
 
-Thank you for your interest in contributing to our documentation! This guide will help you get started.
+## Non-negotiables
 
-## How to contribute
+- **Public surfaces only.** Document observable behavior, inputs, outputs, guarantees, and failure modes. Never internal modules, infrastructure, secrets, provider names, or anything unshipped. When in doubt, document the contract, not the mechanism.
+- **Ground every page in shipped behavior.** Verify against the live API, the console, or the OpenAPI snapshot before describing it. Do not document intent as if it shipped.
+- **Fixed terminology.** Use the canonical terms (model, trait, sample, score card, tier, break, headroom, confidence, composite). Never "profile", "resonance profile", "micro model", or "dimension".
 
-### Option 1: Edit directly on GitHub
+## Writing
 
-1. Navigate to the page you want to edit
-2. Click the "Edit this file" button (the pencil icon)
-3. Make your changes and submit a pull request
+- Declare what a thing **is** before what it isn't.
+- Neutral third person; use "you" only in procedural steps.
+- Authority over metaphor; delete decoration.
+- Concept pages follow the structure of `concepts/score-card.mdx`: Definition → Mechanism → Interpretation → Edge cases → Related.
+- Reference pages follow `api-reference/introduction.mdx`: plain headings, and every endpoint gets purpose, request, response, failure modes, a `curl` example, a client example, and a rate-limit note.
+- Every page ends with a **Next** block of at most two forward links.
+- Tables and figures carry the load; prose connects them.
 
-### Option 2: Local development
+## Before opening a PR
 
-1. Fork and clone this repository
-2. Install the Mintlify CLI: `npm i -g mint`
-3. Create a branch for your changes
-4. Make changes
-5. Navigate to the docs directory and run `mint dev`
-6. Preview your changes at `http://localhost:3000`
-7. Commit your changes and submit a pull request
+```bash
+mint broken-links
+```
 
-For more details on local development, see our [development guide](development.mdx).
-
-## Writing guidelines
-
-- **Use active voice**: "Run the command" not "The command should be run"
-- **Address the reader directly**: Use "you" instead of "the user"
-- **Keep sentences concise**: Aim for one idea per sentence
-- **Lead with the goal**: Start instructions with what the user wants to accomplish
-- **Use consistent terminology**: Don't alternate between synonyms for the same concept
-- **Include examples**: Show, don't just tell
+Then re-read the content-boundary list in `CLAUDE.md` and do a deliberate no-leak pass. Found an awkward API or naming while documenting? File it in the Linear **Public Docs** project — don't work around it in prose, and don't fix the product from here.

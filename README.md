@@ -1,55 +1,41 @@
-# Mintlify Starter Kit
+# U+22A8 docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+Public documentation for [u22a8.ai](https://u22a8.ai), built on [Mintlify](https://mintlify.com) and deployed to **docs.u22a8.ai**.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+This site documents **public surfaces only** — the REST API, the MCP server, authoring schemas, and the concepts behind trait scoring. It never describes internal architecture, infrastructure, or anything that isn't shipped. The full writing and content rules live in [`CLAUDE.md`](./CLAUDE.md) (symlinked as `AGENTS.md`); read it before contributing.
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
-
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
+## Local development
 
 ```bash
-npx skills add https://mintlify.com/docs
+npm i -g mint        # one-time: install the Mintlify CLI
+mint dev             # preview at http://localhost:3000
+mint broken-links    # validate internal links
+mint openapi-check api-reference/openapi.json   # validate the API spec
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+## Structure
 
 ```
-npm i -g mint
+docs.json                  # site config: theme, navigation, API, agent features
+index.mdx                  # overview
+quickstart.mdx             # get a key → first score
+authentication.mdx         # keys, scopes, namespaces
+concepts/                  # Explanation pages (score-card.mdx is the template)
+api-reference/
+  introduction.mdx         # REST overview + curated examples
+  openapi.json             # review-gated snapshot of https://u22a8.ai/v1/openapi.json
+logo/ , favicon.svg        # brand assets (the ⊨ mark)
+CLAUDE.md  (← AGENTS.md)   # standalone context + writing/IA rules
 ```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+## Publishing
 
+Changes merged to the default branch deploy automatically via the Mintlify GitHub app. Pull requests get preview deployments. The user manages git — agents make edits in place and do not commit, push, or branch.
+
+## AI-assisted authoring
+
+```bash
+npx skills add https://mintlify.com/docs   # install Mintlify's authoring skill
 ```
-mint dev
-```
 
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+The API reference auto-generates from `api-reference/openapi.json`. Refresh it deliberately by re-fetching `https://u22a8.ai/v1/openapi.json`, diffing, and reviewing — never point at the live spec, so a new endpoint can't appear unreviewed.

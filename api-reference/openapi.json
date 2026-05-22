@@ -1,58 +1,137 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
-    "license": {
-      "name": "MIT"
-    },
+    "title": "u22a8.ai API · v1",
+    "summary": "Versioned, resource-shaped REST API for scoring models.",
+    "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key — `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). The token-free public scoring surface is `/m/<handle>` (see the top-level API); within /v1, only `/v1/health` and the docs are open.",
     "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "http://sandbox.mintlify.com"
-    }
-  ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
   "paths": {
-    "/plants": {
+    "/health": {
       "get": {
-        "description": "Returns all plants from the system that the user has access to",
+        "tags": [
+          "System"
+        ],
+        "summary": "Liveness check",
+        "description": "DB connectivity check — same probe as the top-level ``/health``.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "List models",
+        "description": "List models, ordered by handle. Returns a cursor-paginated page even when the result fits — clients should treat the shape as stable and opaque-cursor.\n\nWithout ``namespace``, the listing is scoped to the public ``u22a8`` namespace. Pass ``namespace=<name>`` to list elsewhere — it must be a namespace your key owns, or one of the public ones. Filter by ``state`` (``draft|busy|ready|failed|archived``) and ``kind`` (``scoring`` only at launch).",
+        "operationId": "list_models_models_get",
         "parameters": [
           {
             "name": "limit",
             "in": "query",
-            "description": "The maximum number of results to return",
+            "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "maximum": 250,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Namespace"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
-                  }
+                  "$ref": "#/components/schemas/Page_ModelDetail_"
                 }
               }
             }
           },
-          "400": {
-            "description": "Unexpected error",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -60,13 +139,954 @@
         }
       },
       "post": {
-        "description": "Creates a new plant in the store",
+        "tags": [
+          "Models"
+        ],
+        "summary": "Create a model",
+        "description": "Create a draft model. ``handle`` is required and must be in a namespace your key owns — there is no auto-minting. ``kind`` is reserved-now and only accepts ``scoring`` at launch.",
+        "operationId": "create_model_models_post",
         "requestBody": {
-          "description": "Plant to add to the store",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+                "$ref": "#/components/schemas/CreateModelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Get a model",
+        "description": "Returns the model's structured detail (JSON) by default. Set `Accept: text/markdown` to fetch the markdown **model card** instead — the same card MCP `resources/read` returns for this URI, so the advertised resource URI is directly fetchable. Not consent-gated: the card is how a caller reads a model's terms.",
+        "operationId": "get_model_detail_models__handle__get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDetail"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Update a model",
+        "operationId": "update_model_models__handle__patch",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Delete a model",
+        "description": "Soft delete — moves the model to ``state='archived'``. Samples, version history, and the row itself are preserved (restorable by an operator). Idempotent: deleting an already-archived model returns 200. Hard delete is reserved for account-deletion flows and not exposed on the REST API at this time.",
+        "operationId": "delete_model_models__handle__delete",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/traits": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "List traits",
+        "description": "Trait metadata with sample counts, descriptions, and polarity labels.",
+        "operationId": "list_traits_models__handle__traits_get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraitsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Batch upsert traits",
+        "description": "Add or replace traits on a model, keyed by ``key`` (or derived from ``name`` when ``key`` is omitted). Scoring-kind only.",
+        "operationId": "add_traits_models__handle__traits_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraitsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraitsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/traits/discover": {
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Discover traits",
+        "description": "Fit intrinsic trait axes (PCA/LDA) from the model's labeled samples and attach them as ``kind='intrinsic'`` traits (DR 035). Draft-only. Returns 202 + run id on enqueue; the model enters ``busy`` (``last_operation.kind='discover'``) and returns to ``draft`` with the new traits visible on ``GET /traits`` at completion. 409 + ``X-Run-Id`` on an idempotency hit (same sample set + effort).",
+        "operationId": "discover_traits_models__handle__traits_discover_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoverRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "description": "Matching discovery already queued/running/completed."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/traits/{key}": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Get one trait",
+        "description": "One trait's metadata, including the DR 035 fields — ``kind`` and, for discovered intrinsic traits, ``discrimination`` / ``explained_variance`` / ``anchor_sample_ids``. ``key`` matches by trait key or name.",
+        "operationId": "get_trait_models__handle__traits__key__get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraitDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Update one trait",
+        "operationId": "update_trait_models__handle__traits__key__patch",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTraitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraitsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Delete one trait",
+        "operationId": "delete_trait_models__handle__traits__key__delete",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/samples": {
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Batch upsert samples",
+        "description": "Append samples to a model. Each sample's ``trait`` field is resolved by key or name. Scoring-kind only.",
+        "operationId": "add_samples_models__handle__samples_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SamplesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddSamplesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "List samples",
+        "description": "Cursor-paginated sample listing. ``trait`` filters by key or name.",
+        "operationId": "list_samples_models__handle__samples_get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "trait",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Trait"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_SampleRecordOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/samples/{sample_id}": {
+      "delete": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Delete one sample",
+        "operationId": "delete_sample_models__handle__samples__sample_id__delete",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "sample_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sample Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/train": {
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Train (or re-tune)",
+        "description": "Lifecycle entry point (DR 032). From ``draft``: cold-start (bundling + synthesis + Bayesian sweep + fit). From ``ready`` + ``reoptimize_params=true``: fresh sweep. From ``ready`` without the flag: no-op — buffered retrains run automatically. Returns 202 + run id on enqueue, 409 + ``X-Run-Id`` on idempotency hit.",
+        "operationId": "train_model_models__handle__train_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrainRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "description": "Matching run already queued/running/completed."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/score": {
+      "post": {
+        "tags": [
+          "Scoring"
+        ],
+        "summary": "Score content",
+        "description": "Score content against the model's traits. URLs in `content` are auto-fetched and their extracted text is scored. Plain-text bodies (curl convenience: pipe a string or URL with no JSON wrapper) are accepted alongside JSON. Set `Accept: text/plain` for the bar-chart formatter.",
+        "operationId": "score_models__handle__score_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreResponse"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/compare": {
+      "post": {
+        "tags": [
+          "Scoring"
+        ],
+        "summary": "Compare two texts",
+        "description": "Score two texts (`a` is baseline, `b` is candidate) and return the per-trait delta plus the overall improvement. URLs in `a` and `b` are auto-fetched.",
+        "operationId": "compare_models__handle__compare_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract": {
+      "post": {
+        "tags": [
+          "Extract"
+        ],
+        "summary": "Fetch a URL and extract its text",
+        "description": "Resolve a URL to clean text. Reuses the same fetch + readability extractor as the score endpoint. Returns a content hash for dedup. Used by the SDK importer to resolve URL sources at import time so training data stays deterministic.",
+        "operationId": "extract_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequest"
               }
             }
           },
@@ -74,21 +1094,21 @@
         },
         "responses": {
           "200": {
-            "description": "plant response",
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Plant"
+                  "$ref": "#/components/schemas/ExtractResponse"
                 }
               }
             }
           },
-          "400": {
-            "description": "unexpected error",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -96,57 +1116,304 @@
         }
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
+    "/models/{handle}/versions": {
+      "get": {
+        "tags": [
+          "Versions"
+        ],
+        "summary": "List versions",
+        "description": "List a model's param snapshots, newest first. Cursor is the smallest ``version_no`` from the previous page.",
+        "operationId": "list_versions_models__handle__versions_get",
         "parameters": [
           {
-            "name": "id",
+            "name": "handle",
             "in": "path",
-            "description": "ID of plant to delete",
             "required": true,
             "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
               "type": "integer",
-              "format": "int64"
+              "maximum": 250,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
             }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Page_VersionSummary_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
         }
       }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
+    },
+    "/models/{handle}/versions/{v}": {
+      "get": {
+        "tags": [
+          "Versions"
+        ],
+        "summary": "Get a version",
+        "description": "Resolve a ``\"vN\"`` or tag name to its full snapshot. The ``snapshot`` field carries per-trait axes/artifacts and is heavy; for metadata-only access, use the list endpoint instead.",
+        "operationId": "get_version_models__handle__versions__v__get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "v",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "V"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/versions/{name}": {
       "post": {
-        "description": "Information about a new plant added to the store",
+        "tags": [
+          "Versions"
+        ],
+        "summary": "Tag the active version",
+        "description": "Pin ``{name}`` to the model's current active version. Re-using a tag moves the pointer. Tag names matching ``v\\d+`` are rejected to keep the ``vN`` namespace unambiguous.",
+        "operationId": "tag_version_models__handle__versions__name__post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionTagResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Versions"
+        ],
+        "summary": "Untag a version",
+        "operationId": "untag_version_models__handle__versions__name__delete",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionUntagResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/{handle}/versions/active": {
+      "put": {
+        "tags": [
+          "Versions"
+        ],
+        "summary": "Activate a version (rollback / pin)",
+        "description": "Swap ``models.current_version_id`` to the resolved version. Non-destructive: samples continue to accumulate against the latest sample set; buffered retrains continue to mint ``vN+1`` regardless of which version is currently active.",
+        "operationId": "activate_version_models__handle__versions_active_put",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
         "requestBody": {
-          "description": "Plant added to the store",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+                "$ref": "#/components/schemas/VersionActivateRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionActivateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
@@ -154,64 +1421,1661 @@
   },
   "components": {
     "schemas": {
-      "Plant": {
+      "AddSamplesResponse": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "title": "AddSamplesResponse"
+      },
+      "BreaksOut": {
+        "properties": {
+          "developing": {
+            "type": "integer",
+            "title": "Developing"
+          },
+          "solid": {
+            "type": "integer",
+            "title": "Solid"
+          },
+          "strong": {
+            "type": "integer",
+            "title": "Strong"
+          }
+        },
+        "type": "object",
+        "required": [
+          "developing",
+          "solid",
+          "strong"
+        ],
+        "title": "BreaksOut"
+      },
+      "CompareRequest": {
+        "properties": {
+          "a": {
+            "type": "string",
+            "title": "A",
+            "description": "Baseline text or URL."
+          },
+          "b": {
+            "type": "string",
+            "title": "B",
+            "description": "Candidate text or URL."
+          },
+          "traits": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traits",
+            "description": "Score only these traits. Omit to score all."
+          }
+        },
+        "type": "object",
+        "required": [
+          "a",
+          "b"
+        ],
+        "title": "CompareRequest"
+      },
+      "CompareResponse": {
+        "properties": {
+          "a": {
+            "$ref": "#/components/schemas/ScoreResponse"
+          },
+          "b": {
+            "$ref": "#/components/schemas/ScoreResponse"
+          },
+          "improvement": {
+            "type": "integer",
+            "title": "Improvement",
+            "description": "b.composite − a.composite, in points."
+          },
+          "per_trait": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TraitDeltaOut"
+            },
+            "type": "object",
+            "title": "Per Trait"
+          }
+        },
+        "type": "object",
+        "required": [
+          "a",
+          "b",
+          "improvement",
+          "per_trait"
+        ],
+        "title": "CompareResponse"
+      },
+      "CreateModelRequest": {
+        "properties": {
+          "handle": {
+            "type": "string",
+            "title": "Handle",
+            "description": "Namespaced handle, ``<namespace>.<name>`` (e.g. ``u22a8.foo``). Required — there is no auto-minting. The namespace must be one your key owns. Want a random handle? Generate the string yourself.",
+            "examples": [
+              "u22a8.my-model"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "scoring_method": {
+            "type": "string",
+            "title": "Scoring Method",
+            "default": "balanced_cosine",
+            "examples": [
+              "balanced_cosine"
+            ]
+          },
+          "max_depth": {
+            "type": "integer",
+            "title": "Max Depth",
+            "default": 1
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Model kind. Only ``scoring`` is accepted at launch — future kinds (classification/conformance/retrieval) land additively.",
+            "default": "scoring"
+          },
+          "additional_terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Terms"
+          },
+          "upstream_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Sources"
+          },
+          "readme_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readme Markdown"
+          },
+          "zero_data_retention": {
+            "type": "boolean",
+            "title": "Zero Data Retention",
+            "description": "Per-model zero data retention opt-in (DR 032 § ZDR). When True, samples are purged at every training completion, the buffered retrain worker skips this model, and ``POST /score { feedback }`` is rejected.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "title": "CreateModelRequest",
+        "description": "``POST /v1/models`` body. ``handle`` is required and must be in a\nnamespace the caller's key owns (U22-20)."
+      },
+      "DeleteResponse": {
+        "properties": {
+          "handle": {
+            "type": "string",
+            "title": "Handle"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "handle",
+          "deleted"
+        ],
+        "title": "DeleteResponse"
+      },
+      "DiscoverRequest": {
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "DR 031 effort dial — ``low|medium|high|xhigh|max``. Decoded into discovery knobs (trait cap, interpretation budget) by ``oa/training/effort.py``; ``null`` falls through to ``DEFAULT_EFFORT``. No per-knob overrides (DR 035 §5)."
+          }
+        },
+        "type": "object",
+        "title": "DiscoverRequest",
+        "description": "``POST /v1/models/{handle}/traits/discover`` body (DR 035). Effort-only.\n\nDraft-only. Pools the model's labeled samples, fits intrinsic trait axes\n(PCA/LDA), and attaches them as ``kind='intrinsic'`` traits. Response is\nthe shared :class:`TrainResponse` (202 + run id on enqueue, 409 +\n``X-Run-Id`` on idempotency hit) — discovery is just another async\nlifecycle transition."
+      },
+      "ExtractRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "HTTP(S) URL to fetch and extract.",
+            "examples": [
+              "https://example.com/article"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ExtractRequest"
+      },
+      "ExtractResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Echo of the submitted URL."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Extracted text. Truncated past 50KB."
+          },
+          "content_sha256": {
+            "type": "string",
+            "title": "Content Sha256",
+            "description": "Hex SHA-256 of the UTF-8 bytes of `content`. Stable for dedup.",
+            "examples": [
+              "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ]
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At",
+            "description": "UTC timestamp captured at fetch time."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "content",
+          "content_sha256",
+          "fetched_at"
+        ],
+        "title": "ExtractResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "title": "HealthResponse"
+      },
+      "ModelDetail": {
+        "properties": {
+          "handle": {
+            "type": "string",
+            "title": "Handle",
+            "examples": [
+              "u22a8.compelling-readme"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "scoring_method": {
+            "type": "string",
+            "title": "Scoring Method",
+            "examples": [
+              "balanced_cosine"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "description": "Lifecycle state (DR 032 amended by DR 035): ``draft|busy|ready|failed|archived``. ``busy`` is the generic transient state for any async operation — see ``last_operation.kind`` for the mechanism.",
+            "default": "ready",
+            "examples": [
+              "draft",
+              "busy",
+              "ready",
+              "failed",
+              "archived"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "scoring",
+            "examples": [
+              "scoring"
+            ]
+          },
+          "traits": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Traits",
+            "examples": [
+              [
+                "Clarity",
+                "Flow"
+              ]
+            ]
+          },
+          "current_version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Version Id",
+            "description": "BIGINT id of the ``model_versions`` row whose snapshot currently serves scoring. NULL pre-first-train. Updates atomically on every successful train/retrain. (Pre-U22-28 this field carried a TEXT run id; clients pinned to the old shape need to update.)"
+          },
+          "version_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version No",
+            "description": "Monotonic per-model version number of the active snapshot (the integer behind ``vN``). NULL pre-first-train."
+          },
+          "version_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Version Tags",
+            "description": "User-named tags pointing at the active version."
+          },
+          "zero_data_retention": {
+            "type": "boolean",
+            "title": "Zero Data Retention",
+            "description": "Per-model ZDR opt-in (DR 032 § ZDR).",
+            "default": false
+          },
+          "last_operation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Operation",
+            "description": "Most recent lifecycle transition (DR 035): ``{kind, status, started_at, run_id?, progress?, error?}``. ``kind`` names the mechanism behind a ``busy`` state (``train|discover|retune|retrain_buffered|diagnose``). NULL on models that have never had a lifecycle operation.",
+            "examples": [
+              {
+                "kind": "train",
+                "run_id": "run_abc",
+                "started_at": "2026-05-19T12:00:00Z",
+                "status": "succeeded"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "handle",
+          "scoring_method"
+        ],
+        "title": "ModelDetail"
+      },
+      "NativeClaimOut": {
+        "properties": {
+          "relevance": {
+            "type": "number",
+            "title": "Relevance"
+          },
+          "agreement": {
+            "type": "number",
+            "title": "Agreement"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relevance",
+          "agreement"
+        ],
+        "title": "NativeClaimOut"
+      },
+      "NativeOutlierOut": {
+        "properties": {
+          "cohort_similarity": {
+            "type": "number",
+            "title": "Cohort Similarity"
+          },
+          "anomaly_z": {
+            "type": "number",
+            "title": "Anomaly Z"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cohort_similarity",
+          "anomaly_z"
+        ],
+        "title": "NativeOutlierOut"
+      },
+      "NativeSpectrumOut": {
+        "properties": {
+          "polarity": {
+            "type": "number",
+            "title": "Polarity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "polarity"
+        ],
+        "title": "NativeSpectrumOut"
+      },
+      "NativeTopicOut": {
+        "properties": {
+          "topicality": {
+            "type": "number",
+            "title": "Topicality"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topicality"
+        ],
+        "title": "NativeTopicOut"
+      },
+      "Page_ModelDetail_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelDetail"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor for the next page; null when exhausted."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Page size used for this response."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "limit"
+        ],
+        "title": "Page[ModelDetail]"
+      },
+      "Page_SampleRecordOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SampleRecordOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor for the next page; null when exhausted."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Page size used for this response."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "limit"
+        ],
+        "title": "Page[SampleRecordOut]"
+      },
+      "Page_VersionSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VersionSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor for the next page; null when exhausted."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Page size used for this response."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "limit"
+        ],
+        "title": "Page[VersionSummary]"
+      },
+      "SampleInput": {
+        "properties": {
+          "trait": {
+            "type": "string",
+            "title": "Trait",
+            "description": "Trait key or name (resolved server-side).",
+            "examples": [
+              "clarity"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "examples": [
+              "A clear, well-structured paragraph."
+            ]
+          },
+          "quality": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Quality",
+            "description": "Sample quality in [0, 1]. 1.0 = positive pole, 0.0 = negative pole."
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "content_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sha256"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trait",
+          "text",
+          "quality"
+        ],
+        "title": "SampleInput",
+        "description": "Sample shape accepted by ``POST /v1/models/{handle}/samples``."
+      },
+      "SampleRecordOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "trait": {
+            "type": "string",
+            "title": "Trait"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "quality": {
+            "type": "number",
+            "title": "Quality"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "content_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sha256"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trait",
+          "text",
+          "quality"
+        ],
+        "title": "SampleRecordOut"
+      },
+      "SamplesRequest": {
+        "properties": {
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/SampleInput"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "samples"
+        ],
+        "title": "SamplesRequest"
+      },
+      "ScoreMetadata": {
+        "properties": {
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Server-assigned request id (mirrors ``X-Request-Id``)."
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id",
+            "description": "Active version that served this score, formatted as ``vN``. Null when the model has never been trained.",
+            "examples": [
+              "v37"
+            ]
+          },
+          "sample_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Sample Ids",
+            "description": "Sample row ids minted from the ``feedback`` block, in the trait order supplied. Empty when no feedback was sent."
+          }
+        },
+        "type": "object",
+        "title": "ScoreMetadata",
+        "description": "Audit / lifecycle metadata attached to a score response (DR 032).\n\n``version_id`` is the active param-snapshot the score served from,\nformatted as ``\"vN\"`` to match the pinned-handle form (``handle@vN``).\n``null`` pre-first-train. ``sample_ids`` is populated only when the\nrequest included a ``feedback`` block — one id per trait whose\nfeedback was captured."
+      },
+      "ScoreResponse": {
+        "properties": {
+          "scores": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Scores"
+          },
+          "composite": {
+            "type": "integer",
+            "title": "Composite"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence",
+            "default": "moderate"
+          },
+          "headroom": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headroom"
+          },
+          "detail": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TraitScoreDetailOut"
+            },
+            "type": "object",
+            "title": "Detail"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ScoreMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scores",
+          "composite"
+        ],
+        "title": "ScoreResponse"
+      },
+      "TrainRequest": {
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "DR 031 effort dial — ``low|medium|high|max``. Affects the Bayesian-sweep budget on cold-start and re-tune. Ignored for buffered retrains (no sweep)."
+          },
+          "reoptimize_params": {
+            "type": "boolean",
+            "title": "Reoptimize Params",
+            "description": "When True, force a fresh Bayesian sweep from a ``ready`` model. When False, ``ready`` is a no-op (buffered retraining handles the incremental update path).",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "TrainRequest",
+        "description": "``POST /v1/models/{handle}/train`` body. All fields optional.\n\nFrom ``draft``: kicks off cold-start training (transitions to\n``training``). From ``ready`` + ``reoptimize_params=True``: kicks off a\nfresh Bayesian sweep. From ``ready`` without ``reoptimize_params``: no-op\n(buffered retrains run automatically based on sample-add triggers)."
+      },
+      "TrainResponse": {
+        "properties": {
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "Newly enqueued run id, or the matching existing run id on an idempotent hit. ``null`` when ``state == 'ready'`` and no re-optimization was requested (no run was queued)."
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "description": "Current model state after the call.",
+            "examples": [
+              "busy",
+              "ready"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "TrainResponse",
+        "description": "Response from ``POST /v1/models/{handle}/train``."
+      },
+      "TraitDeltaOut": {
+        "properties": {
+          "a": {
+            "type": "integer",
+            "title": "A"
+          },
+          "b": {
+            "type": "integer",
+            "title": "B"
+          },
+          "delta": {
+            "type": "integer",
+            "title": "Delta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "a",
+          "b",
+          "delta"
+        ],
+        "title": "TraitDeltaOut"
+      },
+      "TraitDetail": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "examples": [
+              "clarity_and_simplicity"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "Clarity and Simplicity"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "positive_label": {
+            "type": "string",
+            "title": "Positive Label",
+            "examples": [
+              "Clear"
+            ]
+          },
+          "negative_label": {
+            "type": "string",
+            "title": "Negative Label",
+            "examples": [
+              "Obscure"
+            ]
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "examples": [
+              20
+            ]
+          },
+          "positive_samples": {
+            "type": "integer",
+            "title": "Positive Samples",
+            "examples": [
+              10
+            ]
+          },
+          "negative_samples": {
+            "type": "integer",
+            "title": "Negative Samples",
+            "examples": [
+              10
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "DR 035 definition mode: ``extrinsic`` (labels are the trait, axis re-derived every train) or ``intrinsic`` (axis is the trait, frozen across re-trains — produced by discovery).",
+            "default": "extrinsic",
+            "examples": [
+              "extrinsic"
+            ]
+          },
+          "discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discrimination",
+            "description": "Discriminator strength in [0, 1] for discovered traits (1.0 = perfect separation, 0.5 = chance). NULL for authored."
+          },
+          "explained_variance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explained Variance",
+            "description": "Variance the intrinsic axis explains (PCA/LDA). NULL for extrinsic."
+          },
+          "anchor_sample_ids": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchor Sample Ids",
+            "description": "Positive/negative exemplar sample ids anchoring an intrinsic axis (``{positive: [...], negative: [...]}``). NULL for extrinsic."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "positive_label",
+          "negative_label",
+          "sample_count",
+          "positive_samples",
+          "negative_samples"
+        ],
+        "title": "TraitDetail"
+      },
+      "TraitInput": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key",
+            "description": "Stable identifier. Derived from ``name`` if omitted (snake_case, alphanumerics + underscore)."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "Clarity and Simplicity"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "positive_label": {
+            "type": "string",
+            "title": "Positive Label",
+            "default": "positive"
+          },
+          "negative_label": {
+            "type": "string",
+            "title": "Negative Label",
+            "default": "negative"
+          },
+          "aggregation": {
+            "type": "string",
+            "title": "Aggregation",
+            "default": "mean"
+          }
+        },
+        "type": "object",
         "required": [
           "name"
         ],
+        "title": "TraitInput",
+        "description": "Trait shape accepted by ``POST /v1/models/{handle}/traits``."
+      },
+      "TraitScoreDetailOut": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence"
+          },
+          "band": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Band"
+          },
+          "headroom": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headroom"
+          },
+          "breaks": {
+            "$ref": "#/components/schemas/BreaksOut"
+          },
+          "native": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NativeSpectrumOut"
+              },
+              {
+                "$ref": "#/components/schemas/NativeTopicOut"
+              },
+              {
+                "$ref": "#/components/schemas/NativeClaimOut"
+              },
+              {
+                "$ref": "#/components/schemas/NativeOutlierOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native"
+          }
+        },
         "type": "object",
+        "required": [
+          "score",
+          "label",
+          "confidence",
+          "band",
+          "headroom",
+          "breaks"
+        ],
+        "title": "TraitScoreDetailOut"
+      },
+      "TraitsRequest": {
+        "properties": {
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/TraitInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Traits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "traits"
+        ],
+        "title": "TraitsRequest"
+      },
+      "TraitsResponse": {
+        "properties": {
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/TraitDetail"
+            },
+            "type": "array",
+            "title": "Traits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "traits"
+        ],
+        "title": "TraitsResponse"
+      },
+      "UpdateModelRequest": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "scoring_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scoring Method"
+          },
+          "max_depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Depth"
+          },
+          "additional_terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Terms"
+          },
+          "upstream_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Sources"
+          },
+          "readme_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readme Markdown"
+          },
+          "zero_data_retention": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zero Data Retention",
+            "description": "Toggle ZDR (DR 032 § ZDR). ``False → True`` purges existing samples atomically with the column update. ``True → False`` enables retention forward only — past purges are not reversed."
+          },
+          "version_retention_policy": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Retention Policy",
+            "description": "Auto-prune policy override (U22-28). Keys: ``keep_unnamed`` (int, default 100), ``keep_first_of_month`` (bool, default True). NULL clears the override and reverts to defaults.",
+            "examples": [
+              {
+                "keep_first_of_month": true,
+                "keep_unnamed": 50
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateModelRequest",
+        "description": "``PATCH /v1/models/{handle}`` body. Missing fields = no change.\n\n``state`` is intentionally **not** patchable (DR 035): lifecycle state\nis owned by the FSM (``oa.store.lifecycle.transition``). Use ``POST\n/train`` to move ``draft → ready`` and ``DELETE`` to archive. Unknown\nfields (including ``state``) are rejected so the contract is explicit\nrather than a silent no-op."
+      },
+      "UpdateTraitRequest": {
         "properties": {
           "name": {
-            "description": "The name of the plant",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "positive_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positive Label"
+          },
+          "negative_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negative Label"
+          },
+          "aggregation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aggregation"
+          }
+        },
+        "type": "object",
+        "title": "UpdateTraitRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VersionActivateRequest": {
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Version number in the form ``\"vN\"`` (e.g. ``\"v37\"``).",
+            "examples": [
+              "v37"
+            ]
           },
           "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
-            }
+            ],
+            "title": "Tag",
+            "description": "Tag name.",
+            "examples": [
+              "prod-2026-05-01"
+            ]
           }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
+        },
         "type": "object",
+        "title": "VersionActivateRequest",
+        "description": "``PUT /v1/models/{handle}/versions/active`` body.\n\nExactly one of ``version`` / ``tag`` must be set. ``version`` is the\nmonotonic ``vN`` form; ``tag`` is a user-named pointer."
+      },
+      "VersionActivateResponse": {
         "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
+          "handle": {
+            "type": "string",
+            "title": "Handle"
           },
-          "message": {
-            "type": "string"
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
           }
-        }
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+        },
+        "type": "object",
+        "required": [
+          "handle",
+          "version_no"
+        ],
+        "title": "VersionActivateResponse"
+      },
+      "VersionDetail": {
+        "properties": {
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
+          },
+          "triggered_by": {
+            "type": "string",
+            "title": "Triggered By",
+            "examples": [
+              "train",
+              "retune",
+              "retrain_buffered",
+              "backfill"
+            ]
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "param_hash": {
+            "type": "string",
+            "title": "Param Hash"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot",
+            "description": "Self-contained params blob — per-trait axes and artifacts. Heavy; omitted on scoring-scope reads."
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_id",
+          "version_no",
+          "triggered_by",
+          "param_hash",
+          "sample_count",
+          "created_at"
+        ],
+        "title": "VersionDetail",
+        "description": "A version with its full snapshot payload (authoring scope)."
+      },
+      "VersionSummary": {
+        "properties": {
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
+          },
+          "triggered_by": {
+            "type": "string",
+            "title": "Triggered By",
+            "examples": [
+              "train",
+              "retune",
+              "retrain_buffered",
+              "backfill"
+            ]
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "param_hash": {
+            "type": "string",
+            "title": "Param Hash"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_id",
+          "version_no",
+          "triggered_by",
+          "param_hash",
+          "sample_count",
+          "created_at"
+        ],
+        "title": "VersionSummary",
+        "description": "One row from ``GET /v1/models/{handle}/versions``."
+      },
+      "VersionTagResponse": {
+        "properties": {
+          "handle": {
+            "type": "string",
+            "title": "Handle"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
+          }
+        },
+        "type": "object",
+        "required": [
+          "handle",
+          "tag",
+          "version_no"
+        ],
+        "title": "VersionTagResponse"
+      },
+      "VersionUntagResponse": {
+        "properties": {
+          "handle": {
+            "type": "string",
+            "title": "Handle"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "handle",
+          "tag",
+          "deleted"
+        ],
+        "title": "VersionUntagResponse"
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Scoring",
+      "description": "Score and compare text against models."
+    },
+    {
+      "name": "Models",
+      "description": "Inspect model metadata."
+    },
+    {
+      "name": "Extract",
+      "description": "Fetch and extract text from URLs."
+    },
+    {
+      "name": "System",
+      "description": "Health and operational endpoints."
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://u22a8.ai/v1",
+      "description": "Production"
+    }
+  ]
 }

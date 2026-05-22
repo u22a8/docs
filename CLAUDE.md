@@ -1,0 +1,127 @@
+# U+22A8 — Public Documentation
+
+This repo is the **public documentation site** for u22a8.ai (U+22A8), built on [Mintlify](https://mintlify.com) and deployed to **docs.u22a8.ai**. It is a standalone repo: everything you need to write accurate docs is in this file. The product monorepo and Outline are *optional* verification sources, not dependencies.
+
+> `AGENTS.md` is a symlink to this file. We use Claude, so `CLAUDE.md` is canonical; the symlink keeps Mintlify's tooling and other agents working.
+
+## What we are documenting
+
+U+22A8 hosts **trait-scoring models**: you define a standard of judgment from labelled examples, train a model, and score content against it. Scoring is **deterministic** — same text + same model = same score — and runs **no LLM at score time**. That determinism (and the absence of an LLM judge in the hot path) is the core differentiator; lead with it, don't bury it.
+
+The audience is **anyone integrating or evaluating the platform** — developers calling the API, agents driving the MCP server, people authoring models. Not internal engineers. If a sentence only makes sense to someone who has read our source code, it does not belong here.
+
+### The mental model (canonical vocabulary — use these terms exactly)
+
+- **Model** — a learned geometry in embedding space that applies a standard of judgment to content. Learned from examples, **not** rules, prompts, or fine-tuned weights. Four types by geometry (DR 022):
+  - **scoring** — a learned axis; "how much of X?"
+  - **classification** — per-class pools; "which bucket?"
+  - **conformance** — one normal pool; "is this in-distribution?"
+  - **retrieval** — an indexed corpus; "what's most like this?"
+  - *moderation* is packaged classification (a configuration, not a fifth type).
+- **Trait** — an axis of judgment a model measures. A model has one or more. Simple traits are **typed** (DR 028), each a triple of *(geometry, score range, native metric)*:
+  - **topic** — "is this about X?"
+  - **spectrum** — a pole-pair axis (e.g. formal ↔ casual)
+  - **claim** — relevance × agreement
+  - **outlier** — distance to a cohort (Mahalanobis)
+- **Sample** — a labelled example: content plus a polarity/quality label per trait.
+- **Score card** — the result of scoring: a per-trait **score** (an integer **0–100** on the wire; conceptually a universal value in [0,1]), a **composite**, plus context. Two score channels (DR 029): the universal score (for display + cross-trait composition) and a typed **native score** (`polarity`, `topicality`, `relevance`/`agreement`, `cohort_similarity`/`anomaly_z`) for ranking and diagnostics. **Never compare scores across trait types.** Per-trait `detail` carries the tier `label`, `confidence`, `band`, `headroom`, calibrated `breaks` (`developing`/`solid`/`strong` thresholds), and `native`.
+- **Tiers** (DR 013) — label bands: **Strong / Solid / Developing / Weak**.
+- **Breaks** — trained thresholds that define tier boundaries.
+- **Headroom** — score distance to the next break above.
+- **Confidence** — reliability signal (high / moderate / low) derived from training-distribution geometry.
+- **Composite** — harmonic mean of per-trait scores.
+- **Lifecycle** (DR 032 — *the model is the API contract*) — `draft → training → ready` (plus `failed`, `archived`). One pattern for everything: **create a model → add samples → train → score** (with optional `feedback` for online learning). Versions are snapshots with named tags and rollback. Trait and sample mutations are **draft-only** (DR 035); discovery is a draft-only transition.
+
+Retired terms — **never use**: "resonance profile", "profile" (→ *model*), "micro model", "dimension" (→ *trait*), the tuning-fork metaphor. The `dev.*` namespace is retired (do not mention it).
+
+## Public surfaces (what gets documented, and where truth lives)
+
+The **public programmatic surface is HTTP**: the REST API and the product MCP server. Document these first.
+
+| Surface | What it is | Canonical truth |
+|---|---|---|
+| **REST API** | `https://u22a8.ai/v1` — resource-shaped, key-authenticated. 16 resource paths under `/v1/models/{handle}/…` (`score`, `compare`, `samples`, `traits`, `train`, `versions`) plus `/v1/extract`. | `api-reference/openapi.json` (snapshot of the live spec) |
+| **Product MCP** | `https://u22a8.ai/mcp` — OAuth (WorkOS) MCP server exposing reading / scoring / authoring / lifecycle tools, and models as readable resources (model-card markdown). | The live server + the tool list below |
+| **Console** | `https://u22a8.ai/console` — WorkOS magic-link sign-in, **API-key management** (scoped at issuance), per-key usage. Where developers get a key. | The live console |
+| **Authoring schemas** | `model.yaml` + JSONL samples — the published training-input contract (DR 009), at `u22a8.ai/schemas`. | The published JSON Schemas |
+| **TypeScript SDK** | Hand-written HTTP client for `/v1` — **in progress (U22-57)**, not shipped. Document when it lands. | — |
+
+**MCP tools** (group them this way in docs): *reading* — `list_models`, `get_model`, `list_traits`, `list_samples`, `list_versions`, `get_version`; *scoring* — `score`, `compare`, `extract`; *authoring* (draft-only) — `create_model`, `update_model`, `delete_model`, `add_traits`, `update_trait`, `delete_trait`, `add_samples`, `delete_sample`; *lifecycle* — `train`, `discover_traits`, `tag_version`, `untag_version`, `activate_version`.
+
+**Authentication.** Developers issue an API key in the console and send `Authorization: Bearer <key>`. Keys carry a scope — **`scoring`** (read + score/compare) or **`authoring`** (full). A key authors only in namespaces it owns, and reads its own plus the public namespaces (`u22a8`, `live`, `bench`). MCP uses OAuth via WorkOS rather than a static key.
+
+> **The `oa` Python package is NOT the public client.** It connects via `DATABASE_URL` and is the in-process service layer behind REST/MCP (and a self-host/local-authoring tool). Never present `oa.connect(...)` as "how to use the hosted platform." Public integration is HTTP: REST, MCP, and the forthcoming TypeScript SDK. The `python -m oa` CLI and the local modeler plugin are *local authoring* (advanced/self-host audience) — keep them out of the primary integration path.
+
+> **Two different "MCP" servers — keep them distinct.** Mintlify auto-hosts a **docs MCP** at this site's domain that answers questions *about the docs* (search + page read). That is **not** our product MCP at `u22a8.ai/mcp`, which scores content. When a page says "MCP," be explicit about which one.
+
+## Content boundaries — never leak internals (DR 018 §4)
+
+Public docs document **observable behavior, inputs, outputs, guarantees, and failure modes** — not how it's built. The following must **never** appear in a published page:
+
+- Internal module paths or package internals (`oa/engine`, `oa/store`, `oa/training`, `optimization/`, `ai/`, `templates/`, `notebooks/`).
+- Production infrastructure: the host/IP, Cloudflare, `docker-compose`, schema/migrations, backups, cron.
+- Unpublished repos (e.g. `qed-bench`) and any private benchmark internals.
+- Secrets and operator env vars (`POSTGRES_PASSWORD`, `COHERE_API_KEY`, `UNKEY_ROOT_KEY`, `WORKOS_API_KEY`, `DATABASE_URL`, …). The only env var a *reader* sees is `U22A8_API_KEY`.
+- Embedding-provider names / Bedrock model IDs, cost internals, the optimization-loop internals.
+- The retired `dev.*` namespace; the deprecated `/m/` and `/p/` surfaces as a *recommended* path (the token-free `/m/{handle}` exists but is unadvertised — do not feature it).
+
+When in doubt, document the contract, not the mechanism. If an internal detail genuinely changes a reader's decision, state the *effect*, not the implementation.
+
+## How pages must read (DR 018 — writing rubric, distilled)
+
+DR 018 is the enforceable rubric. Model voice on the **NASA Systems Engineering Handbook**: clarity without warmth (warm voice is for marketing surfaces, not here).
+
+1. **Declare, don't negate.** Open by stating what the concept *is*. Test: strip "not / isn't / doesn't / actually / just" from the first paragraph — if it still reads, the original was hedging.
+2. **Neutral third person.** Use "you" only for concrete procedural steps, never conceptual exposition. Prefer "the/a" over "your" except for things the reader literally owns.
+3. **Authority over metaphor.** Delete any metaphor a same-length direct statement could replace.
+4. **Describe the system, not the mechanics.** (See content boundaries above.)
+5. **Ship docs for shipped features only.** No unreleased capabilities on concept/reference pages. Roadmap lives in a dedicated meta page or a `proposed` DR.
+6. **Terminology is fixed** — use the canonical vocabulary above; one term per concept, no synonyms.
+7. **Reference describes, doesn't sell.** Every endpoint/tool gets: a one-sentence purpose, request shape, response shape, failure modes, **≥1 copy-pasteable `curl`**, **≥1 copy-pasteable example in a client language**, and a rate-limit note where applicable (the `/v1` API is not currently rate-limited; the legacy `/m` surface is). Reference headings are plain ("Authentication", "Endpoints"), not numbered.
+8. **Examples match the domain** — real evaluation/judgment use cases, not toys.
+9. **Concept pages are structured, not narrated.** Fixed sections: **Definition** (one sentence + formal expression) → **Mechanism** (diagram/table) → **Interpretation** (what decision it changes) → **Edge cases** (optional) → **Related** (optional).
+10. **Every page ends with a "Next" block** — **at most two** forward links. More than two means the page should be a hub.
+11. **Tables and figures are load-bearing**, with declarative-sentence captions; prose is connective tissue.
+12. **Link a term on first use; never define inline in parentheses.** A glossary page is the link target.
+
+DR 018 and DR 019 are **accepted** and are this site's foundation. DR 018 §6 predates DR 022 and still says "profile" — DR 022 supersedes it, so always use "model".
+
+## How pages are organized (DR 019 — information architecture, distilled)
+
+- **Content type is the primary axis** (Diátaxis): *Explanation* (understand), *Reference* (retrieve), *How-to* (complete a task), *Tutorial* (guided from nothing). Surface only the types that have pages.
+- **Domain is the secondary axis, only inside Explanation.** Add a domain heading (e.g. "Scoring", "Models") only at **≥4 concept pages**; below that, fold in.
+- **Surface labels prioritize reader clarity over framework vocabulary.** The sidebar shows "Scoring", not "Explanation".
+- **Flat URLs** (`/concept-slug`, addressed by concept, not type) and a **flat sidebar** (sibling groups, not nested). If a second level seems needed, supersede DR 019 rather than nest.
+- **Cross-cutting meta** (roadmap, changelog) is its own top-level section, never nested in a domain.
+- **Cross-link by content-type pair**: Reference→Explanation on first use of a term; Explanation→Reference only when an integration detail clarifies a concept; never link to Meta from body text (sidebar-discoverable only).
+
+**Target IA** (build toward this; `docs.json` only lists pages that exist):
+
+- **Guides** tab — *Get started* (overview, quickstart, authentication), *How-to* guides, and *Concepts* grouped by domain (Scoring: score card, traits, tiers, breaks, headroom, confidence, composite, score types; Models & training: models, training, supervision, samples, briefs, discovery, calibration, versions/evolution).
+- **API reference** tab — REST API (auto-generated from the OpenAPI snapshot + curated overlays), MCP server, SDK (when shipped), authoring schemas.
+
+The current web `/docs` (18 pages, in the monorepo at `templates/docs/`) is the *inspiration* set, not a migration source. Rebuild from first principles per DR 018/019.
+
+## Mintlify mechanics
+
+- **`docs.json`** is the single config (theme, colors, fonts, navigation, `api`, `contextual`). Navigation must reference **only pages that exist**, or the build breaks.
+- **Pages** are `.mdx` with YAML frontmatter: `title`, `description`, `icon`, optional `sidebarTitle`. Use sentence case in body headings; bold for UI elements; code formatting for paths/commands/identifiers.
+- **Components**: `Card`/`Columns`, `Steps`, `Tabs`, `Accordion`, `CodeGroup`, `ParamField`/`ResponseField`/`Expandable`, callouts (`Note`/`Tip`/`Warning`/`Info`/`Check`/`Danger`), `Frame`, `Mermaid` (fenced ` ```mermaid `), `Visibility`, `Prompt`.
+- **Agent-ready features are on by default** — every page has a `.md` mirror, `llms.txt`/`llms-full.txt` auto-generate, and Mintlify hosts a docs MCP. Use `<Visibility for="agents">` to give agents direct API calls where humans get UI steps; embed a `<Prompt>` with `npx skills add https://docs.u22a8.ai` on the getting-started page.
+- **API reference**: auto-generated from `api-reference/openapi.json` (a snapshot of `https://u22a8.ai/v1/openapi.json`). Customize per-endpoint with the `x-mint` OpenAPI extension (curated prose, the required `curl`/client example) rather than dropping to hand-written MDX. Refresh the snapshot deliberately (see drift below).
+- **Local dev**: `mint dev` (preview at :3000), `mint broken-links`, `mint openapi-check`. Deploy is automatic via the Mintlify GitHub app on push to the default branch; PRs get preview deployments.
+- Install Mintlify's own authoring skill once per environment: `npx skills add https://mintlify.com/docs`.
+
+## Keeping docs true (drift & police)
+
+- **OpenAPI snapshot** is review-gated, not a live pointer — so a new endpoint can't silently appear and leak. Refresh by re-fetching `https://u22a8.ai/v1/openapi.json`, diffing, and reviewing. *Known local patch*: the snapshot's `servers` is rewritten to the absolute `https://u22a8.ai/v1` and the live spec lacks a declared bearer `securitySchemes` (auth is prose-only) — both should be fixed upstream in the API, after which the snapshot becomes a clean copy.
+- **Before publishing**, run `mint broken-links` and re-read the content-boundary list above — a no-leak pass is mandatory.
+- **Drift from the product** is caught two ways: the monorepo's `/police` sweep flags public-surface changes (endpoints, MCP tools, schemas) that need doc updates; this repo's own CI should run broken-links, OpenAPI freshness, and an internal-leak scan.
+
+## Working agreements
+
+- **The user manages git.** Never `git commit`, `git push`, `git checkout -b`, or `git branch`. Make edits in place; ask before destructive ops.
+- **Ground every page in shipped behavior.** Verify against the live API/console or the OpenAPI snapshot before describing it. Don't document intent as if it shipped.
+- **Capture, don't fix, product rough edges.** When documenting surfaces this honest, you'll find awkward APIs and naming. File them (Linear, *Public Docs* project) — don't fix product from the docs repo.
+- **Reference DRs by code** (e.g. "DR 032"); fetch bodies from Outline (`outline` MCP) when available. The distilled essentials above are enough to write without fetching.
+- Work is tracked in Linear under the **Public Docs** project; the planning doc lives in Outline (*Product Planning Active*).

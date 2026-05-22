@@ -1,133 +1,48 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "U+22A8 documentation"
+description: "Score content against trait-scoring models you define from examples — deterministic, with no language model at score time."
 ---
 
-## Setting up
-
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
+U+22A8 scores content against **models** you define from labelled examples. A model encodes one or more **traits** — axes of judgment such as *clarity* or *intent* — and scoring returns a number per trait, a composite, and the context to interpret it. Scoring is deterministic: the same text and the same model produce the same score every time, and no language model runs at score time.
 
 <Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Get a key and score your first text in a few minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="The score card" icon="table-list" href="/concepts/score-card">
+    What a score returns — scores, tiers, confidence, headroom.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    The resource-shaped `/v1` API: models, samples, training, scoring.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Console" icon="key" href="https://u22a8.ai/console">
+    Issue and manage API keys.
   </Card>
 </Columns>
 
-## Create beautiful pages
+## How it works
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Define a standard">
+    A model is a set of traits, each taught by labelled example **samples** — not rules, prompts, or fine-tuned weights.
+  </Step>
+  <Step title="Train">
+    Training fits each trait's geometry in embedding space and calibrates the thresholds that separate score tiers.
+  </Step>
+  <Step title="Score">
+    Send content to the model. It returns a score per trait with confidence and headroom — deterministically, without invoking a language model.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+The public catalog under `u22a8.*` ships ready-to-use models. You can also author your own through the API.
 
-## Make your content agent ready
-
-Make your docs work for humans and AI agents alike.
+## Next
 
 <Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Score your first text.
   </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
+  <Card title="The score card" icon="table-list" href="/concepts/score-card">
+    Interpret what you get back.
   </Card>
 </Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>

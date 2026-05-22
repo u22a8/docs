@@ -1,0 +1,42 @@
+---
+title: "Authentication"
+description: "How API keys, scopes, and namespaces control access."
+---
+
+Every `/v1` endpoint requires an API key, sent as a bearer token:
+
+```http
+Authorization: Bearer <U22A8_API_KEY>
+```
+
+Issue keys in the [console](https://u22a8.ai/console). A key's secret is shown once, at creation.
+
+## Scopes
+
+A key carries a scope, chosen when you issue it:
+
+| Scope | Permits |
+|-------|---------|
+| `scoring` | Read models and traits; `score` and `compare`. |
+| `authoring` | Everything in `scoring`, plus create models, add samples and traits, train, and manage versions. |
+
+Choose the narrowest scope a caller needs. A scoring integration never needs an authoring key.
+
+## Namespaces
+
+Models live in namespaces. A key **authors** only in namespaces it owns, and **reads** its own namespaces plus the public catalog (`u22a8`, `live`, `bench`). A write to a namespace the key does not own is refused.
+
+## MCP
+
+The MCP server at `https://u22a8.ai/mcp` authenticates with OAuth through your AI client rather than a static key. Once connected, a session reaches the same models and respects the same namespace ownership as a REST key.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    Base URL, conventions, and failure modes.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Score your first text.
+  </Card>
+</Columns>

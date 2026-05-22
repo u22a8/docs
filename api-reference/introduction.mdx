@@ -1,33 +1,97 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "REST API"
+description: "The resource-shaped /v1 API: models, samples, training, and scoring over HTTP."
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+The U+22A8 REST API is versioned and resource-shaped. Everything hangs off a model handle:
 
-## Welcome
+```
+https://u22a8.ai/v1/models/{handle}/...
+```
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+A model is the unit of everything — you create it, add samples, train it, and score against it through the same resource. Responses are JSON and carry a request id; list endpoints are cursor-paginated; errors share one envelope.
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+Send your API key as a bearer token on every request:
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+```http
+Authorization: Bearer <U22A8_API_KEY>
 ```
+
+Issue keys in the [console](https://u22a8.ai/console). Keys are scoped (`scoring` or `authoring`) and bounded to the namespaces they own plus the public catalog. See [Authentication](/authentication).
+
+## Scoring
+
+`POST /v1/models/{handle}/score` scores content against a model's traits. Send the text as a raw body or as JSON with a `content` field:
+
+<CodeGroup>
+```bash curl
+curl https://u22a8.ai/v1/models/u22a8.commit-message/score \
+  -H "Authorization: Bearer $U22A8_API_KEY" \
+  -H "Content-Type: text/plain" \
+  --data-binary 'Fix race condition in worker dispatch by draining the in-flight queue before shutdown'
+```
+
+```python Python
+import os, requests
+
+resp = requests.post(
+    "https://u22a8.ai/v1/models/u22a8.commit-message/score",
+    headers={"Authorization": f"Bearer {os.environ['U22A8_API_KEY']}"},
+    json={"content": "Fix race condition in worker dispatch by draining the in-flight queue before shutdown"},
+)
+resp.raise_for_status()
+card = resp.json()
+print(card["composite"], card["scores"])
+```
+</CodeGroup>
+
+```json Response
+{
+  "scores": {
+    "intent_clarity": 77,
+    "scope_precision": 85,
+    "actionable_summary": 84,
+    "context_sufficiency": 71,
+    "signal_density": 86
+  },
+  "composite": 80,
+  "confidence": "moderate",
+  "headroom": 10
+}
+```
+
+A URL in `content` is fetched and its extracted text is scored. Set `Accept: text/plain` for a bar-chart view instead of JSON. The full response shape is documented in [the score card](/concepts/score-card).
+
+## Conventions
+
+| Concern | Behavior |
+|---------|----------|
+| Base URL | `https://u22a8.ai/v1` |
+| Auth | `Authorization: Bearer <key>` on every endpoint |
+| Format | JSON request and response; `score` and `compare` also accept raw text |
+| Pagination | Cursor-based; list responses return a `next` cursor |
+| Errors | One error envelope; every response carries a request id |
+
+## Failure modes
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing or invalid API key. |
+| `403` | The key's scope or namespace does not permit the operation. |
+| `404` | No model with that handle in a namespace the key can read. |
+| `422` | Request body failed validation. |
+
+The endpoint pages in this section are generated from the API's OpenAPI specification.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Scopes, namespaces, and what a key can reach.
+  </Card>
+  <Card title="The score card" icon="table-list" href="/concepts/score-card">
+    The full shape of a score response.
+  </Card>
+</Columns>

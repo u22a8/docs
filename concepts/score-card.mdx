@@ -1,0 +1,81 @@
+---
+title: "The score card"
+description: "The structure returned when content is scored: a score per trait, a composite, and the context to interpret them."
+icon: "table-list"
+---
+
+A **score card** is the result of scoring content against a model. It reports a score for each of the model's traits, a single composite, and — per trait — the context needed to interpret the number: a tier label, a confidence signal, and headroom to the next tier.
+
+## Definition
+
+For a model with traits $t_1 \dots t_n$, scoring content $c$ returns a **score** $s_i \in [0, 100]$ for each trait $t_i$, a **composite** equal to the harmonic mean of the trait scores, and per-trait **detail**. The card is deterministic: the same content and the same model version always produce the same card.
+
+## Mechanism
+
+Each trait score is the position of the content's embedding along that trait's learned geometry, projected onto a 0–100 scale. Calibrated **breaks** divide that scale into tiers; the score's position relative to its breaks yields the tier label and the headroom.
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `scores` | object | Score (0–100) per trait, keyed by trait. |
+| `composite` | integer | Harmonic mean across traits — a low score on any trait pulls it down. |
+| `confidence` | `high` \| `moderate` \| `low` | How densely the training data surrounds this region. |
+| `headroom` | integer | Points to the next break above the score. |
+| `detail.<trait>.label` | string | Tier: Strong, Solid, Developing, or Weak. |
+| `detail.<trait>.breaks` | object | The calibrated thresholds (`developing`, `solid`, `strong`). |
+| `detail.<trait>.native` | object | The trait's typed native metric (for example, `polarity`). |
+
+A real card for a commit message scored against `u22a8.commit-message`:
+
+```json
+{
+  "scores": {
+    "intent_clarity": 77,
+    "scope_precision": 85,
+    "actionable_summary": 84,
+    "context_sufficiency": 71,
+    "signal_density": 86
+  },
+  "composite": 80,
+  "confidence": "moderate",
+  "headroom": 10,
+  "detail": {
+    "scope_precision": {
+      "score": 85,
+      "label": "Solid",
+      "confidence": "high",
+      "band": [83, 87],
+      "headroom": 2,
+      "breaks": { "developing": 18, "solid": 83, "strong": 87 },
+      "native": { "polarity": 0.20 }
+    }
+  }
+}
+```
+
+## Interpretation
+
+Read the composite first, then the traits that drag it. Because the composite is a harmonic mean, a single weak trait lowers it more than an arithmetic average would — a card with one Weak trait is not "mostly fine."
+
+- **Tier** answers "how good, in plain terms?" Use it for thresholds and gates.
+- **Confidence** answers "how much should this score be trusted?" A high score with low confidence sits in a sparsely-sampled region; treat it as provisional.
+- **Headroom** answers "how close is the next tier?" Small headroom means a minor edit could change the label — `scope_precision` above is 2 points below Strong.
+- **Native** answers the trait's type-specific question and supports ranking, where the 0–100 score saturates.
+
+Scores are comparable within a trait. They are not comparable across traits of different types.
+
+## Edge cases
+
+- A model with one trait still returns a composite; it equals that trait's score.
+- When `confidence` is `low`, the score is still deterministic — low confidence reflects sparse training data near the input, not randomness.
+- Headroom is `null` when the score is already in the top tier.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Produce a score card of your own.
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    The endpoint that returns it.
+  </Card>
+</Columns>
