@@ -1,0 +1,65 @@
+---
+title: "Samples"
+description: "A labelled example — content paired with a label — and the form every kind of supervision resolves to."
+icon: "tags"
+---
+
+import { SamplesFigure } from '/snippets/figures/SamplesFigure.jsx';
+
+A **sample** is a single labelled example: a piece of content paired with a label that places it on a [trait](/concepts/traits). Samples are the most direct form of [supervision](/concepts/supervision), and the form every other form resolves to before [training](/concepts/training) runs.
+
+<Frame caption="Each sample pairs content with a label; the positive and negative samples set a trait's two poles.">
+  <SamplesFigure />
+</Frame>
+
+## Definition
+
+A sample carries content and a label for the trait it demonstrates. The label places the content on the trait's axis, from the negative pole at `0.0` to the positive pole at `1.0`. A trait's positive and negative samples become the two clusters its axis is fit between, so both poles need coherent examples — the negatives define the boundary as much as the positives do.
+
+## Mechanism
+
+Samples reach a model two ways, both validated against the published [samples schema](/api-reference/authoring-schemas):
+
+| Path | Shape |
+|------|-------|
+| **Hosted** | JSON objects to `add_samples` — one object per trait label: `{ trait, text, quality }`, with `quality` a number in `[0, 1]`. |
+| **File-based** | One JSON object per line in a [JSONL file](/api-reference/authoring-schemas), carrying `content` and one field per trait it labels. |
+
+Sent to the [REST API](/api-reference/introduction) or [MCP](/api-reference/mcp) server, each sample labels one trait with a numeric `quality`:
+
+```json
+{
+  "samples": [
+    { "trait": "intent_clarity", "text": "Fix race condition in worker dispatch by draining the queue before shutdown", "quality": 0.9 },
+    { "trait": "intent_clarity", "text": "misc updates", "quality": 0.1 }
+  ]
+}
+```
+
+In a [JSONL file](/api-reference/authoring-schemas) a single line can label several traits at once, and a trait's value may be a quality word — `good`, `fair`, `poor` — or a number:
+
+```json
+{"content": "Fix race condition in worker dispatch by draining the queue before shutdown", "intent_clarity": "good", "signal_density": 0.9}
+```
+
+## Interpretation
+
+- More samples, with positive and negative clusters that are clearly separated, produce sharper [breaks](/concepts/tiers#breaks) and higher [confidence](/concepts/confidence). Sparse or overlapping samples widen the low-confidence region.
+- Keep each pole coherent: the positives should resemble each other, and so should the negatives. A trait learned from a scattered negative set has a fuzzy boundary.
+- Use a label near `1.0` or `0.0` when a call is clear-cut, and a value in between when content genuinely sits partway along the axis.
+
+## Edge cases
+
+- A file-based sample can label several traits in one line; a hosted sample labels one trait per object.
+- Explicit samples are added while a model is a [draft](/concepts/model-lifecycle). On a model already serving scores, [feedback](/concepts/supervision) is the path that adds samples — it captures a label for scored content and folds it into the next [version](/concepts/versions).
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Briefs" icon="clipboard-list" href="/concepts/briefs">
+    Describe a standard and have samples synthesized.
+  </Card>
+  <Card title="Authoring schemas" icon="file-code" href="/api-reference/authoring-schemas">
+    The published sample and model formats.
+  </Card>
+</Columns>

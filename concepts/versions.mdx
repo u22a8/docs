@@ -1,0 +1,58 @@
+---
+title: "Versions"
+description: "A snapshot of a model's trained parameters — named, activated, and rolled back to."
+icon: "code-branch"
+---
+
+import { VersionsFigure } from '/snippets/figures/VersionsFigure.jsx';
+
+A **version** is a snapshot of a model's trained parameters. Every [training](/concepts/training) run records one — `v1`, `v2`, and so on — an **active** pointer selects which version serves scores, and naming a version lets you pin or roll back to it.
+
+<Frame caption="Each training run snapshots a version; the active pointer selects which one serves scoring, and rollback re-points it.">
+  <VersionsFigure />
+</Frame>
+
+## Definition
+
+A version captures the trained geometry and calibrated thresholds from one training run — not the samples, which accumulate independently as an append-only log. Versioning targets **parameters**: each run produces a new snapshot, and the model can serve any one of them.
+
+## Mechanism
+
+Each version carries the record of the run that produced it:
+
+| Field | Meaning |
+|-------|---------|
+| `version_no` | The integer behind `vN`, incrementing per run. |
+| `triggered_by` | What produced it — `train`, `retune`, a background `retrain_buffered`, or `backfill`. |
+| `sample_count` | How many samples the run trained on. |
+| `metrics` | Quality metrics recorded at training time. |
+| `tags` | User-named pointers to this version. |
+| `created_at` | When the run completed. |
+
+The model's `current_version_id` names the version serving scores. Two operations move it:
+
+- **Tag** a version to give it a stable name, independent of its number (`tag_version` on [MCP](/api-reference/mcp), the version endpoints on [REST](/api-reference/introduction)).
+- **Activate** a version to make it serve scores (`activate_version`), by number or by tag. Activating an older version is a **rollback**.
+
+Samples keep accumulating after a rollback; the next retrain produces a fresh version against the current sample set, which you activate when ready.
+
+## Interpretation
+
+- Scoring always serves the active version, so changing it controls behavior without retraining. A rollback is instant and reversible — the parameters are stored, not recomputed.
+- **Tag the versions you depend on.** Tagged and named versions are retained; older unnamed snapshots are pruned over time. A tag is also a stable handle to pin against, so a caller is not exposed to the latest run by default.
+
+## Edge cases
+
+- A model has no version until its first successful [training](/concepts/training) run — `current_version_id` is null while it is a [draft](/concepts/model-lifecycle).
+- A background retrain creates a new version and swaps it in atomically; scoring is uninterrupted and never serves a half-trained snapshot.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Model lifecycle" icon="arrows-spin" href="/concepts/model-lifecycle">
+    Where training and versioning sit in the lifecycle.
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    The endpoints that list and activate versions.
+  </Card>
+</Columns>

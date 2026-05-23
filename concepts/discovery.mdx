@@ -1,0 +1,45 @@
+---
+title: "Discovery"
+description: "Fit a model's trait axes from its samples instead of declaring them — producing intrinsic traits."
+icon: "magnifying-glass-chart"
+---
+
+import { DiscoveryFigure } from '/snippets/figures/DiscoveryFigure.jsx';
+
+**Discovery** finds a model's [traits](/concepts/traits) from its samples. You supply examples, and discovery fits the axes that best separate or spread them — producing **intrinsic** traits the model then trains around.
+
+<Frame caption="Discovery fits intrinsic axes to the directions that carry the most structure in a model's samples.">
+  <DiscoveryFigure />
+</Frame>
+
+## Definition
+
+Discovery fits intrinsic trait axes to a draft model's samples. An **intrinsic** trait is one whose axis *is* its definition — a fixed direction recovered from the data. It contrasts with an **extrinsic** trait, whose axis is re-derived from labels on every training run. Discovery is how intrinsic traits are created.
+
+## Mechanism
+
+Discovery runs on a [draft](/concepts/model-lifecycle) model. It examines the spread of the model's samples in embedding space, fits candidate axes along the directions that carry the most structure, and attaches them to the model as intrinsic traits. The model then returns to `draft` with the new traits in place, ready to [train](/concepts/training).
+
+Re-training freezes an intrinsic trait's axis and re-fits only the [breaks](/concepts/tiers#breaks) around it — the direction never rotates once discovered. Discovery is asynchronous and draft-only: the model reports [`busy`](/concepts/model-lifecycle) while it runs, and the traits it produces become part of the model's frozen definition once trained.
+
+## Interpretation
+
+- Discovery suits content that clearly differs in ways you cannot yet name. The fitted axes surface structure already present in the examples, rather than imposing axes from outside.
+- Discovered axes are **descriptive**: each separates the data along some direction, and naming what that direction means is the author's job.
+- Reach for an [extrinsic](/concepts/traits) trait when you know the axis and can label for it; reach for discovery when the data should reveal the axis.
+
+## Edge cases
+
+- Discovered and authored traits coexist on one model — discover some axes, declare others.
+- How many axes discovery proposes is bounded by the [effort](/concepts/training) of the build.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Traits" icon="compass" href="/concepts/traits">
+    Intrinsic and extrinsic traits side by side.
+  </Card>
+  <Card title="Training" icon="graduation-cap" href="/concepts/training">
+    How discovered axes are trained and calibrated.
+  </Card>
+</Columns>

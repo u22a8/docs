@@ -50,6 +50,19 @@
               "concepts/confidence",
               "concepts/composite"
             ]
+          },
+          {
+            "group": "Models & training",
+            "pages": [
+              "concepts/models",
+              "concepts/model-lifecycle",
+              "concepts/training",
+              "concepts/supervision",
+              "concepts/samples",
+              "concepts/briefs",
+              "concepts/discovery",
+              "concepts/versions"
+            ]
           }
         ]
       },

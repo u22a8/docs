@@ -1,0 +1,50 @@
+---
+title: "Models"
+description: "A learned geometry in embedding space that applies a standard of judgment to content."
+icon: "cube"
+---
+
+import { ModelFigure } from '/snippets/figures/ModelFigure.jsx';
+
+A **model** applies a standard of judgment to content. It reads a piece of text and places it relative to a standard learned from examples, reporting one or more [trait](/concepts/traits) scores and a [composite](/concepts/composite) as a [score card](/concepts/score-card).
+
+<Frame caption="A model is a geometry fit to labelled examples; scoring projects new content onto it to a position.">
+  <ModelFigure />
+</Frame>
+
+## Definition
+
+A model is a learned geometry in an embedding space. Each [trait](/concepts/traits) it measures is an axis fit to labelled examples — content paired with a polarity or quality label. The standard of judgment lives in that geometry: examples that demonstrate the standard, distilled into a fixed shape any new content can be measured against.
+
+A model is learned from demonstrated examples — written rules, natural-language prompts, and hand-tuned weights play no part. Curating examples requires only recognizing the standard, not articulating it; the model captures what its author knows how to recognize and makes that judgment repeatable.
+
+## Mechanism
+
+Building a model and using it are distinct steps:
+
+| Step | What happens |
+|------|--------------|
+| Define | Declare the model's traits and supply [supervision](/concepts/supervision) — the examples that demonstrate the standard. |
+| Train | [Training](/concepts/training) fits each trait's geometry and calibrates the thresholds that separate [tiers](/concepts/tiers). |
+| Score | The trained model projects new content onto each trait and returns a [score card](/concepts/score-card). |
+
+Scoring runs **no language model**. A trained model is fixed embedding geometry, so the same content and the same model version always produce the same score card. A model is small and fast, and behaves identically across every surface that calls it — the [REST API](/api-reference/introduction), the [MCP server](/api-reference/mcp), or a model-card read.
+
+Each model has a stable **handle** within a namespace — for example `u22a8.commit-message`. The public catalog under `u22a8.*` ships ready-to-use models; an account authors its own in namespaces it owns.
+
+## Interpretation
+
+A model is a unit of judgment, scoped to one standard. Several traits on one model report several judgments about the same content at once; the [composite](/concepts/composite) folds them into a single number. To measure a different standard, use — or build — a different model.
+
+Because scoring is deterministic and carries no per-call language-model inference, a model behaves like infrastructure: a gate in a pipeline, a check in review, a ranking signal. Its judgment is consistent with the examples it was taught, repeatable across runs.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Traits" icon="compass" href="/concepts/traits">
+    The axes of judgment a model measures.
+  </Card>
+  <Card title="Model lifecycle" icon="arrows-spin" href="/concepts/model-lifecycle">
+    How a model goes from draft to serving scores.
+  </Card>
+</Columns>

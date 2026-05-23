@@ -1,0 +1,54 @@
+---
+title: "Briefs"
+description: "Supervision by description — articulate the standard and have labelled samples synthesized from it."
+icon: "clipboard-list"
+---
+
+import { BriefFigure } from '/snippets/figures/BriefFigure.jsx';
+
+A **brief** states the standard a model should learn in structured natural language. It is [supervision](/concepts/supervision) by description: you articulate what good looks like, and the [build](/concepts/training) synthesizes labelled [samples](/concepts/samples) from it before training.
+
+<Frame caption="A brief states intent in a few parts; the build synthesizes labelled samples from it before training.">
+  <BriefFigure />
+</Frame>
+
+## Definition
+
+A brief is articulated intent — the standard expressed as words rather than examples. It suits the common starting point where you can describe the judgment you want but have no labelled dataset to hand. From a brief, the build generates the examples a model needs to [train](/concepts/training).
+
+## Mechanism
+
+A brief that produces a usable model covers six elements:
+
+| Element | What it states |
+|---------|----------------|
+| **Intent** | What the model is for, and the decision it supports. |
+| **Domain** | The kind of content, its context, and its audience. |
+| **Exemplars of good** | The qualities that should score well — described, not listed. |
+| **Failure modes** | The anti-patterns and common ways content misses. |
+| **Edge cases** | Tricky calls you want handled a particular way. |
+| **Constraints / non-goals** | What the model should not optimize for. |
+
+At its most minimal, a brief is the essentials of a single trait — a pair of poles, or a question. The more of the six elements it carries, the closer the synthesized samples land to the standard you intend.
+
+## Interpretation
+
+- A brief trades precision for speed. It is the fastest way to a first scoring model, and a strong starting point to refine with direct [samples](/concepts/samples) or [feedback](/concepts/supervision) once real content flows.
+- Describe **qualities, not instances**: "concrete and free of hedging" generalizes to new content; a list of ten good sentences does not.
+- Name the **failure modes** explicitly. The negative pole shapes a trait's geometry as much as the positive one, so a brief that only describes "good" leaves the boundary underspecified.
+
+## Edge cases
+
+- A brief and supplied samples can coexist: synthesized examples fill the gaps a partial dataset leaves.
+- Because a brief resolves to samples, a model built from one produces the same [score card](/concepts/score-card) shape as a model built from data.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Samples" icon="tags" href="/concepts/samples">
+    What a brief is synthesized into.
+  </Card>
+  <Card title="Authoring schemas" icon="file-code" href="/api-reference/authoring-schemas">
+    Where a trait's minimal specification is declared.
+  </Card>
+</Columns>
