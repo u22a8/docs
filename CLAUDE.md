@@ -129,7 +129,7 @@ The current web `/docs` (18 pages, in the monorepo at `templates/docs/`) is the 
 
 ## Keeping docs true (drift & police)
 
-- **OpenAPI snapshot** is review-gated, not a live pointer — so a new endpoint can't silently appear and leak. Refresh by re-fetching `https://u22a8.ai/v1/openapi.json`, diffing, and reviewing. *Known local patch*: the snapshot's `servers` is rewritten to the absolute `https://u22a8.ai/v1` and the live spec lacks a declared bearer `securitySchemes` (auth is prose-only) — both should be fixed upstream in the API, after which the snapshot becomes a clean copy.
+- **OpenAPI snapshot** is review-gated, not a live pointer — so a new endpoint can't silently appear and leak. It is now a **clean verbatim copy** of the live spec (no local patching): U22-149 hardened the upstream `/v1` spec so it declares the absolute `servers` URL, a bearer `securitySchemes` + global `security`, and the `score`/`compare` request bodies. Refresh by re-fetching `https://u22a8.ai/v1/openapi.json`, diffing, and reviewing — overwrite the file directly, don't hand-edit.
 - **Before publishing**, run `mint broken-links` and re-read the content-boundary list above — a no-leak pass is mandatory.
 - **Drift from the product** is caught two ways: the monorepo's `/police` sweep flags public-surface changes (endpoints, MCP tools, schemas) that need doc updates; this repo's own CI should run broken-links, OpenAPI freshness, and an internal-leak scan.
 

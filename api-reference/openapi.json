@@ -6,6 +6,12 @@
     "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key — `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). The token-free public scoring surface is `/m/<handle>` (see the top-level API); within /v1, only `/v1/health` and the docs are open.",
     "version": "1.0.0"
   },
+  "servers": [
+    {
+      "url": "https://u22a8.ai/v1",
+      "description": "Production"
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
@@ -1005,6 +1011,22 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "description": "Raw text or URL to score (curl convenience)."
               }
             }
           }
@@ -3051,6 +3073,75 @@
           "deleted"
         ],
         "title": "VersionUntagResponse"
+      },
+      "ScoreRequest": {
+        "properties": {
+          "content": {
+            "description": "Text or URL to score. URLs are auto-fetched.",
+            "examples": [
+              "https://example.com/article"
+            ],
+            "title": "Content",
+            "type": "string"
+          },
+          "traits": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Score only these traits. Omit to score all.",
+            "title": "Traits"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional ``{trait_key_or_name: label_or_quality}`` map for continuous learning (U22-59, DR 032). When supplied, each entry is captured as a labeled sample alongside the score and feeds the buffered retrain trigger. Values may be a polarity label (``\"positive\"|\"negative\"|\"good\"|...``) or a float in ``[0, 1]``. Rejected with ``feature_unavailable`` on models with ``zero_data_retention=true``.",
+            "examples": [
+              {
+                "clarity": "positive",
+                "depth": 0.8
+              }
+            ],
+            "title": "Feedback"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "ScoreRequest",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key issued in the platform console, sent as `Authorization: Bearer <key>`."
       }
     }
   },
@@ -3072,10 +3163,9 @@
       "description": "Health and operational endpoints."
     }
   ],
-  "servers": [
+  "security": [
     {
-      "url": "https://u22a8.ai/v1",
-      "description": "Production"
+      "bearerAuth": []
     }
   ]
 }
