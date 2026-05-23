@@ -1,10 +1,16 @@
 ---
-title: "The score card"
+title: "Score card"
 description: "The structure returned when content is scored: a score per trait, a composite, and the context to interpret them."
 icon: "table-list"
 ---
 
-A **score card** is the result of scoring content against a model. It reports a score for each of the model's traits, a single composite, and — per trait — the context needed to interpret the number: a tier label, a confidence signal, and headroom to the next tier.
+import { ScoreCardFigure } from '/snippets/figures/ScoreCardFigure.jsx';
+
+A **score card** is the result of scoring content against a model. It reports a score for each of the model's [traits](/concepts/traits), a single [composite](/concepts/composite), and — per trait — the context needed to interpret the number: a tier label, a confidence signal, and headroom to the next tier.
+
+<Frame caption="A score card pairs one score per trait with a single composite and a confidence signal.">
+  <ScoreCardFigure />
+</Frame>
 
 ## Definition
 
@@ -12,16 +18,17 @@ For a model with traits $t_1 \dots t_n$, scoring content $c$ returns a **score**
 
 ## Mechanism
 
-Each trait score is the position of the content's embedding along that trait's learned geometry, projected onto a 0–100 scale. Calibrated **breaks** divide that scale into tiers; the score's position relative to its breaks yields the tier label and the headroom.
+Each trait score is the position of the content's embedding along that trait's learned geometry, projected onto a 0–100 scale. Calibrated [breaks](/concepts/tiers#breaks) divide that scale into [tiers](/concepts/tiers); the score's position relative to its breaks yields the tier label and the [headroom](/concepts/tiers#headroom).
 
 | Field | Type | Meaning |
 |-------|------|---------|
 | `scores` | object | Score (0–100) per trait, keyed by trait. |
 | `composite` | integer | Harmonic mean across traits — a low score on any trait pulls it down. |
 | `confidence` | `high` \| `moderate` \| `low` | How densely the training data surrounds this region. |
-| `headroom` | integer | Points to the next break above the score. |
+| `headroom` | integer \| null | The largest per-trait headroom — the bottleneck trait's gap to its next break. `null` when no trait can be graded. |
 | `detail.<trait>.label` | string | Tier: Strong, Solid, Developing, or Weak. |
 | `detail.<trait>.breaks` | object | The calibrated thresholds (`developing`, `solid`, `strong`). |
+| `detail.<trait>.band` | array | `[low, high]` around the score — the inter-quartile span of its training cluster. |
 | `detail.<trait>.native` | object | The trait's typed native metric (for example, `polarity`). |
 
 A real card for a commit message scored against `u22a8.commit-message`:
@@ -56,10 +63,10 @@ A real card for a commit message scored against `u22a8.commit-message`:
 
 Read the composite first, then the traits that drag it. Because the composite is a harmonic mean, a single weak trait lowers it more than an arithmetic average would — a card with one Weak trait is not "mostly fine."
 
-- **Tier** answers "how good, in plain terms?" Use it for thresholds and gates.
-- **Confidence** answers "how much should this score be trusted?" A high score with low confidence sits in a sparsely-sampled region; treat it as provisional.
-- **Headroom** answers "how close is the next tier?" Small headroom means a minor edit could change the label — `scope_precision` above is 2 points below Strong.
-- **Native** answers the trait's type-specific question and supports ranking, where the 0–100 score saturates.
+- **[Tier](/concepts/tiers)** answers "how good, in plain terms?" Use it for thresholds and gates.
+- **[Confidence](/concepts/confidence)** answers "how much should this score be trusted?" A high score with low confidence sits in a sparsely-sampled region; treat it as provisional.
+- **[Headroom](/concepts/tiers#headroom)** answers "how close is the next tier?" Small headroom means a minor edit could change the label — `scope_precision` above is 2 points below Strong.
+- **[Native](/concepts/score-types)** answers the trait's type-specific question and supports ranking, where the 0–100 score saturates.
 
 Scores are comparable within a trait. They are not comparable across traits of different types.
 
@@ -67,7 +74,7 @@ Scores are comparable within a trait. They are not comparable across traits of d
 
 - A model with one trait still returns a composite; it equals that trait's score.
 - When `confidence` is `low`, the score is still deterministic — low confidence reflects sparse training data near the input, not randomness.
-- Headroom is `null` when the score is already in the top tier.
+- Headroom is `0` when the score is already Strong, and `null` when confidence is `low` — a graded top score and a withheld grade are distinct.
 
 ## Next
 

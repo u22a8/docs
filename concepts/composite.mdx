@@ -1,0 +1,55 @@
+---
+title: "Composite"
+description: "One number summarizing a score card — the harmonic mean of the trait scores."
+icon: "calculator"
+---
+
+import { CompositePull } from '/snippets/figures/CompositePull.jsx';
+
+The **composite** is the single 0–100 number that summarizes a [score card](/concepts/score-card). It is the harmonic mean of the per-trait scores, so a weakness in any one trait pulls it down.
+
+## Definition
+
+For trait scores $s_1 \dots s_n$ above zero, the composite is their harmonic mean:
+
+$$
+\text{composite} = \frac{n}{\sum_{i=1}^{n} \frac{1}{s_i}}
+$$
+
+The harmonic mean is dominated by the smallest values, so it penalizes an uneven card more sharply than an arithmetic average would.
+
+<Frame caption="The composite is a harmonic mean, so one weak trait drags it below the simple average of the scores.">
+  <CompositePull />
+</Frame>
+
+## Mechanism
+
+The composite carries three signals — and deliberately no tier label:
+
+| Signal | Derivation |
+|--------|------------|
+| `composite` | Harmonic mean of the trait scores. |
+| `confidence` | The weakest per-trait [confidence](/concepts/confidence). |
+| `headroom` | The largest per-trait [headroom](/concepts/tiers#headroom) — the bottleneck trait. |
+
+A composite has no training distribution of its own, so there are no [breaks](/concepts/tiers#breaks) to grade it against and no composite [tier](/concepts/tiers).
+
+## Interpretation
+
+Read the composite first, then the [traits](/concepts/traits) that drag it down. Because the mean is harmonic, a card with one Weak trait is not "mostly fine" — that trait dominates the composite. The weakest-link confidence and the bottleneck headroom point at the same place: the trait to fix first.
+
+## Edge cases
+
+- A single-trait model still returns a composite; it equals that trait's score.
+- A trait that scores exactly `0` is excluded from the composite rather than forcing it to `0` — the composite reflects the traits that carry signal.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Score card" icon="table-list" href="/concepts/score-card">
+    The full result the composite summarizes.
+  </Card>
+  <Card title="Tiers & breaks" icon="ranking-star" href="/concepts/tiers">
+    Tiers, the breaks that define them, and the headroom the composite reports.
+  </Card>
+</Columns>

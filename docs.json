@@ -43,7 +43,12 @@
           {
             "group": "Scoring",
             "pages": [
-              "concepts/score-card"
+              "concepts/score-card",
+              "concepts/traits",
+              "concepts/score-types",
+              "concepts/tiers",
+              "concepts/confidence",
+              "concepts/composite"
             ]
           }
         ]

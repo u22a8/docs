@@ -1,0 +1,60 @@
+---
+title: "Traits"
+description: "An axis of judgment a model measures — one question, one score."
+icon: "compass"
+---
+
+import { TraitsFigure } from '/snippets/figures/TraitsFigure.jsx';
+
+A **trait** is a single axis of judgment: one question a model asks of content, such as "how clear is this?" or "is this on topic?" A [model](/concepts/score-card) has one or more traits, and scoring returns one score per trait alongside a [composite](/concepts/composite).
+
+<Frame caption="A model measures one or more traits; each trait is an axis of judgment that scoring places content on, between a negative and a positive pole.">
+  <TraitsFigure />
+</Frame>
+
+## Definition
+
+A trait is learned from labelled examples — content paired with a polarity or quality label — not from rules, prompts, or hand-tuned weights. Once trained, a trait is a fixed geometry in embedding space; scoring projects content onto that geometry to produce a universal score $s \in [0, 1]$, reported on a 0–100 scale.
+
+## Mechanism
+
+Each trait carries the metadata needed to understand what it measures. These fields appear on a model card and through the `list_traits` operation:
+
+| Field | Meaning |
+|-------|---------|
+| `key` | Stable identifier — the key used in the score card's `scores` and `detail`. |
+| `name` | Human-readable trait name. |
+| `description` | What the trait measures. |
+| `positive_label` / `negative_label` | The trait's two poles, e.g. *Clear* / *Obscure*. |
+| `kind` | Definition mode — `extrinsic` or `intrinsic` (explained below). |
+
+A trait is defined in one of two modes:
+
+- **Extrinsic** — the labelled samples *are* the trait; the axis is re-derived from them on every training run. This is the default for authored traits.
+- **Intrinsic** — the axis *is* the trait; a fixed direction recovered from the data that re-training calibrates around but never rotates. Discovery produces intrinsic traits.
+
+Separately, each trait has a [type](/concepts/score-types) — its geometry — which determines the shape of the native score it reports.
+
+## Interpretation
+
+A trait answers exactly one question, so a model with several traits reports several independent judgments.
+
+- Scores are comparable **within** a trait: 80 is better than 60 on the same trait.
+- Scores are **not** comparable across traits of different [types](/concepts/score-types) — an 80 on a topic trait and an 80 on a spectrum trait describe different geometric facts.
+- The [composite](/concepts/composite) folds the per-trait scores into one number.
+
+## Edge cases
+
+- A model may have a single trait; its composite then equals that trait's score.
+- The poles are descriptive, not a fixed ranking — a trait can be designed so that either pole is the desirable one.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Score types" icon="shapes" href="/concepts/score-types">
+    The four geometries a trait can take.
+  </Card>
+  <Card title="Composite" icon="calculator" href="/concepts/composite">
+    How per-trait scores combine into one number.
+  </Card>
+</Columns>

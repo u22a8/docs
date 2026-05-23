@@ -1,0 +1,37 @@
+/*
+ * DR 021 §6.2 — italic outer-rim grid.
+ *
+ * Near-vertical hairlines tilted ~11° (101deg gradient angle) to match the
+ * brand's italic ⊨ axis; horizontals stay level. Faint — felt before seen.
+ * Sits behind content; shows through page margins/gutters.
+ *
+ * NOTE: free-tier custom-CSS loading on Mintlify is unconfirmed — Mintlify
+ * markets "Global CSS" as a Pro-plan beta, while repo .css auto-load is
+ * documented without a plan gate. Verify in `mint dev` / a preview deploy;
+ * if it does not load on our plan, this is ready for the U22-153 Pro upgrade.
+ */
+
+:root {
+  --u22-grid: rgba(20, 17, 12, 0.045);   /* warm ink on cream */
+  --u22-grid-step: 32px;
+}
+
+.dark,
+[data-theme="dark"] {
+  --u22-grid: rgba(239, 231, 214, 0.06); /* warm cream on dark */
+}
+
+body {
+  background-image:
+    repeating-linear-gradient(
+      101deg,
+      var(--u22-grid) 0, var(--u22-grid) 1px,
+      transparent 1px, transparent var(--u22-grid-step)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--u22-grid) 0, var(--u22-grid) 1px,
+      transparent 1px, transparent var(--u22-grid-step)
+    );
+  background-attachment: fixed;
+}

@@ -1,0 +1,53 @@
+---
+title: "Confidence"
+description: "How much to trust a score — high, moderate, or low — based on training-data density."
+icon: "gauge-high"
+---
+
+import { ConfidenceClusters } from '/snippets/figures/ConfidenceClusters.jsx';
+
+**Confidence** is a reliability signal — `high`, `moderate`, or `low` — that says how much to trust a score. It reflects how densely the training distribution surrounds the scored content, not how extreme the score is.
+
+<Frame caption="Confidence is high inside a training cluster and moderate in the gap between two well-separated clusters.">
+  <ConfidenceClusters />
+</Frame>
+
+## Definition
+
+Confidence is derived from where a score falls relative to the two training clusters:
+
+| Level | Where the score sits |
+|-------|----------------------|
+| `high` | Inside a cluster — a tail, or the body of a well-separated cluster |
+| `moderate` | In the gap between two well-separated clusters |
+| `low` | In the region where the clusters overlap |
+
+It appears per trait as `detail.<trait>.confidence`; the card's top-level `confidence` is the weakest (lowest) value across all traits.
+
+## Mechanism
+
+Confidence gates the grade. When confidence is `low`, both the [tier](/concepts/tiers) label and the [headroom](/concepts/tiers#headroom) are `null` — the model withholds judgment rather than emit an unreliable grade. For a well-separated trait, confidence tracks the tier: Strong, Solid, and Weak read `high`, Developing reads `moderate`, and the overlap reads `low`.
+
+Low confidence does not mean a random or unstable score. Scoring is deterministic — the same content and the same model version always produce the same score and the same confidence. Low confidence means the training data is sparse or ambiguous near this content, so the *grade* is less trustworthy, not the *number*.
+
+## Interpretation
+
+- A high score with low confidence is provisional: it sits in a region the training data does not cover well. Treat it as a hint, not a verdict.
+- Gate automated actions on `high` confidence. Because Developing reads `moderate` rather than `high`, such a gate skips transitional content — which is the intent.
+- The card's weakest-link confidence means a single untrustworthy trait flags the whole result.
+
+## Edge cases
+
+- Confidence is a per-score heuristic from cluster geometry, not a calibrated probability — it signals relative trust, not a guarantee of correctness.
+- A sparse training set tends to produce overlapping clusters, which lowers confidence — small data shows up here rather than as a separate signal.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Tiers" icon="ranking-star" href="/concepts/tiers">
+    The labels confidence gates.
+  </Card>
+  <Card title="Score card" icon="table-list" href="/concepts/score-card">
+    Where confidence sits in the result.
+  </Card>
+</Columns>

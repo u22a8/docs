@@ -1,0 +1,63 @@
+---
+title: "Score types"
+description: "Each trait has one of four types, fixing its geometry, score range, and native metric."
+icon: "shapes"
+---
+
+import { ScoreTypeGlyphs } from '/snippets/figures/ScoreTypeGlyphs.jsx';
+
+Every [trait](/concepts/traits) has a **type** that fixes three things at once: the geometry it uses to judge content, the range its native score lives in, and the question that score answers. The universal 0–100 score is the same across all types; the type is what gives each trait its own native signal.
+
+<Frame caption="Each trait type is a distinct geometry: closeness to a topic, a position on a pole-to-pole axis, relevance combined with agreement, or distance from a cohort.">
+  <ScoreTypeGlyphs />
+</Frame>
+
+## Definition
+
+A trait type is a triple — *(geometry, score range, native metric)*. Four types are defined; a trait declares exactly one.
+
+| Type | Question | Geometry |
+|------|----------|----------|
+| `topic` | Is this about X? | Cosine similarity to a learned model of the topic. |
+| `spectrum` | Where on this scale? | Projection onto a learned pole-to-pole axis. |
+| `claim` | Does this confirm a statement? | A relevance subspace combined with an agreement axis. |
+| `outlier` | Is this unusual for a cohort? | Mahalanobis distance to a reference cohort. |
+
+## Mechanism
+
+Each trait reports two score channels, both returned in the score card:
+
+- **Universal score** — a value in $[0, 1]$, reported 0–100. This is the cross-type display number: it drives the [composite](/concepts/composite), the [tiers](/concepts/tiers), and anything that compares or combines traits.
+- **Native score** — one or more typed fields, named for the geometry's own question. Native recovers the signal the universal score saturates or collapses. It is reported in the field's own range, **never** rescaled to 0–100.
+
+The native fields appear as `detail.<trait>.native`:
+
+| Type | Native field(s) | Range | Reports |
+|------|-----------------|-------|---------|
+| `topic` | `topicality` | $[-1, 1]$ | Drift toward the topic (positive) vs ambient content (negative). |
+| `spectrum` | `polarity` | $[-1, 1]$ | Which pole (sign) and how strongly (magnitude). |
+| `claim` | `relevance`, `agreement` | $[0, 1]$, $[0, 1]$ | Whether content is about the claim, and — given it is — whether it confirms ($>0.5$) or contradicts ($<0.5$). |
+| `outlier` | `cohort_similarity`, `anomaly_z` | $[-1, 1]$, $(-\infty, \infty)$ | Raw similarity to the cohort, and a standardized standoff that ranks content deep in the tail. |
+
+## Interpretation
+
+- Use the **universal** score for display, gating, and any cross-trait reasoning — it is the only channel that composes.
+- Use the **native** score for ranking and diagnosis, where the universal score saturates. Two clearly anomalous texts both read near 100 universal; their `anomaly_z` values still separate them.
+- A `claim` universal score near the middle is ambiguous on its own — off-topic and on-topic-but-neutral both land there. The `(relevance, agreement)` pair disambiguates.
+- Never compare scores across types.
+
+## Edge cases
+
+- *Moderation* is packaged classification — a configuration of these primitives, not a fifth type.
+- A single-pole `spectrum` trait derives its opposite pole automatically, so it still projects onto a full axis.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Traits" icon="compass" href="/concepts/traits">
+    What a trait is and what it measures.
+  </Card>
+  <Card title="Score card" icon="table-list" href="/concepts/score-card">
+    Where these scores are returned.
+  </Card>
+</Columns>

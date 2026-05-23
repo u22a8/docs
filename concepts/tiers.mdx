@@ -1,0 +1,103 @@
+---
+title: "Tiers, breaks & headroom"
+sidebarTitle: "Tiers & breaks"
+description: "How a trait score is graded: plain-language tiers, the trained breaks that define them, and the headroom to the next one."
+icon: "ranking-star"
+---
+
+import { ScoreAxis } from '/snippets/figures/ScoreAxis.jsx';
+import { BreaksDistribution } from '/snippets/figures/BreaksDistribution.jsx';
+import { HeadroomGap } from '/snippets/figures/HeadroomGap.jsx';
+
+A **tier** is the plain-language label attached to a trait score — **Strong**, **Solid**, **Developing**, or **Weak**. Tiers come from **breaks**, the trained thresholds that divide a trait's scale, and **headroom** measures how far a score sits from the next break above. Together they turn a raw 0–100 number into something a reader can act on.
+
+<Frame caption="Data-driven breaks split the 0–100 scale into four tiers: Weak, Developing, Solid, and Strong.">
+  <ScoreAxis />
+</Frame>
+
+## Definition
+
+A tier is assigned by where a score falls relative to its trait's breaks. The label appears as `detail.<trait>.label`.
+
+| Tier | Boundary | Meaning | Typical action |
+|------|----------|---------|----------------|
+| **Strong** | at or above the `strong` break | In the positive cluster's top quartile | A strength — focus elsewhere |
+| **Solid** | at or above the `solid` break | Inside the positive cluster | Good — minor refinement possible |
+| **Developing** | at or above the `developing` break | Between the two clusters | Improving — keep pushing |
+| **Weak** | below the `developing` break | Inside the negative cluster | Needs significant work |
+| `null` | — | [confidence](/concepts/confidence) is `low` | Can't grade reliably |
+
+## Breaks
+
+**Breaks** are the three thresholds — `developing`, `solid`, and `strong` — each tied to a quartile of the training distribution, so the boundaries reflect real data rather than fixed cutoffs. They appear as `detail.<trait>.breaks`.
+
+<Frame caption="Each break sits at a quartile of a training cluster — the negatives' 75th percentile, and the positives' 25th and 75th.">
+  <BreaksDistribution />
+</Frame>
+
+Each break is computed from the score quartiles of the positive and negative training samples:
+
+```text
+developing = neg_p75
+solid      = max(pos_p25, developing)
+strong     = max(pos_p75, solid)
+```
+
+| Break | Tied to | Crossing it means |
+|-------|---------|-------------------|
+| `developing` | upper edge of the negative cluster (`neg_p75`) | Left the negative cluster |
+| `solid` | lower edge of the positive cluster (`pos_p25`) | Entered the positive cluster |
+| `strong` | upper quartile of the positive cluster (`pos_p75`) | Reached the top of the positive cluster |
+
+The nested `max(...)` keeps the breaks monotonic — `developing` ≤ `solid` ≤ `strong` — even when the two clusters overlap. When they overlap, the breaks collapse toward each other, the Developing band shrinks, and scores in the overlap region get low [confidence](/concepts/confidence) and no tier.
+
+## Headroom
+
+**Headroom** is the distance, in score points, from a score to the next break above it. It appears per trait as `detail.<trait>.headroom` and, for the card as a whole, as the top-level `headroom`.
+
+<Frame caption="Headroom is the gap from a score to the next break — here, a Solid score's distance to Strong. A score already at Strong has 0 headroom.">
+  <HeadroomGap />
+</Frame>
+
+| Current tier | Headroom measures distance to |
+|--------------|-------------------------------|
+| Weak | the `developing` break |
+| Developing | the `solid` break |
+| Solid | the `strong` break |
+| Strong | `0` — already at the top |
+
+Each tier has exactly one natural next milestone, so headroom is always a single, unambiguous "distance to the next level" — a client can show it without knowing which threshold it targets. The card's top-level `headroom` is the **largest** per-trait headroom: the bottleneck trait, the one with the most ground left to cover.
+
+## Interpretation
+
+Tier and [confidence](/concepts/confidence) move together for a well-separated trait:
+
+| Tier | Confidence |
+|------|------------|
+| Strong | high |
+| Solid | high |
+| Developing | moderate |
+| Weak | high |
+| `null` | low |
+
+Developing generally carries `moderate` confidence — built-in honesty about a transitional score. Gate automated actions on Strong or Solid; treat Developing as content that warrants human judgment.
+
+Breaks are per-trait and re-derived on every training run, so the same raw score can mean different things across traits or across versions. Read the tier and the headroom, which already fold the breaks in; the raw thresholds are mainly for diagnostics and for drawing the scale. Small headroom means a minor edit could change the tier — a score two points below the `strong` break is one improvement away from Strong — and the composite's headroom points at the trait to work on first.
+
+## Edge cases
+
+- When confidence is `low`, both the label and the headroom are `null` — the model withholds a grade rather than guess.
+- Overlapping clusters collapse the Developing band — by design, content that lands in the overlap is left ungraded.
+- Headroom `0` and `null` are distinct: `0` is a graded score already at the top tier; `null` is a withheld grade because confidence was too low.
+- Every break is a real cluster quartile; none is an arbitrary cutoff.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Confidence" icon="gauge-high" href="/concepts/confidence">
+    Why some scores get no tier at all.
+  </Card>
+  <Card title="Composite" icon="calculator" href="/concepts/composite">
+    How per-trait scores combine into one number.
+  </Card>
+</Columns>
