@@ -3,7 +3,7 @@
   "info": {
     "title": "u22a8.ai API · v1",
     "summary": "Versioned, resource-shaped REST API for scoring models.",
-    "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key — `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). The token-free public scoring surface is `/m/<handle>` (see the top-level API); within /v1, only `/v1/health` and the docs are open.",
+    "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key — `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). Within /v1, only `/v1/health` and the docs are open.",
     "version": "1.0.0"
   },
   "servers": [
@@ -42,7 +42,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/health"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import requests\n\nrequests.get(\"https://u22a8.ai/v1/health\").json()  # {\"status\": \"ok\"}"
+          }
+        ]
       }
     },
     "/models": {
@@ -152,26 +164,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -212,6 +204,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -222,6 +234,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl \"https://u22a8.ai/v1/models?limit=20\" \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    params={\"limit\": 20},\n)\nfor m in r.json()[\"items\"]:\n    print(m[\"handle\"], m[\"traits\"])"
+          }
+        ],
+        "x-mint": {
+          "content": "Without a `namespace` query parameter the listing covers the public `u22a8` catalog. Pass `namespace=<name>` to list a namespace your key owns. Results are cursor-paginated: follow `next_cursor` until it is `null`."
         }
       },
       "post": {
@@ -262,26 +289,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -292,8 +299,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -302,8 +309,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -332,6 +339,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -342,6 +369,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"handle\": \"acme.support-tone\", \"description\": \"Warmth and clarity of support replies\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/models\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\n        \"handle\": \"acme.support-tone\",\n        \"description\": \"Warmth and clarity of support replies\",\n    },\n)\nprint(r.json()[\"handle\"], r.json()[\"state\"])  # acme.support-tone draft"
+          }
+        ],
+        "x-mint": {
+          "content": "Creates a model in the `draft` state. The `handle` must be in a namespace your key owns. Next: add traits and samples, then train."
         }
       }
     },
@@ -351,7 +393,7 @@
           "Models"
         ],
         "summary": "Get a model",
-        "description": "Returns the model's structured detail (JSON) by default. Set `Accept: text/markdown` to fetch the markdown **model card** instead — the same card MCP `resources/read` returns for this URI, so the advertised resource URI is directly fetchable. Not consent-gated: the card is how a caller reads a model's terms.",
+        "description": "Returns the model's structured detail as JSON. Set `Accept: text/markdown` to fetch the **model card** instead — the same markdown the MCP server exposes as the model's resource. Reading a model is never gated by its additional terms; the card is how a caller reviews those terms.",
         "operationId": "get_model_detail_models__handle__get",
         "parameters": [
           {
@@ -395,26 +437,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -455,6 +477,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -465,6 +507,26 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/u22a8.commit-message\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)\nprint(r.json()[\"traits\"])"
+          },
+          {
+            "lang": "bash",
+            "label": "cURL (model card)",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Accept: text/markdown\""
+          }
+        ],
+        "x-mint": {
+          "content": "Returns JSON by default. Set `Accept: text/markdown` to fetch the **model card** — a human-readable summary of the model, its traits, and any additional terms. It is the same markdown the MCP server serves as the model's resource."
         }
       },
       "patch": {
@@ -520,26 +582,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -550,8 +592,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -560,8 +602,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -590,6 +632,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -600,6 +662,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X PATCH https://u22a8.ai/v1/models/acme.support-tone \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"description\": \"Tone and clarity of customer replies\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.patch(\n    \"https://u22a8.ai/v1/models/acme.support-tone\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"description\": \"Tone and clarity of customer replies\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "Patches model metadata; omitted fields are left unchanged. Lifecycle state is not patchable — use `POST …/train` to move a draft to `ready` and `DELETE` to archive."
         }
       },
       "delete": {
@@ -607,7 +684,7 @@
           "Models"
         ],
         "summary": "Delete a model",
-        "description": "Soft delete — moves the model to ``state='archived'``. Samples, version history, and the row itself are preserved (restorable by an operator). Idempotent: deleting an already-archived model returns 200. Hard delete is reserved for account-deletion flows and not exposed on the REST API at this time.",
+        "description": "Archive a model: it moves to the ``archived`` state and stops serving on /v1. Samples and version history are retained. Idempotent — archiving an already-archived model returns 200. Permanent deletion is handled through account deletion, not this endpoint.",
         "operationId": "delete_model_models__handle__delete",
         "parameters": [
           {
@@ -646,26 +723,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -706,6 +763,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -716,7 +793,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X DELETE https://u22a8.ai/v1/models/acme.support-tone \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.delete(\n    \"https://u22a8.ai/v1/models/acme.support-tone\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ]
       }
     },
     "/models/{handle}/traits": {
@@ -764,26 +853,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -824,6 +893,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -834,7 +923,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message/traits \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/u22a8.commit-message/traits\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)\nfor t in r.json()[\"traits\"]:\n    print(t[\"key\"], t[\"sample_count\"])"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -890,26 +991,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -920,8 +1001,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -930,8 +1011,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -960,6 +1041,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -970,6 +1071,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/traits \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"traits\": [{\"name\": \"Warmth\", \"positive_label\": \"warm\", \"negative_label\": \"cold\"}]}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/models/acme.support-tone/traits\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"traits\": [\n        {\"name\": \"Warmth\", \"positive_label\": \"warm\", \"negative_label\": \"cold\"},\n    ]},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -979,7 +1095,7 @@
           "Models"
         ],
         "summary": "Discover traits",
-        "description": "Fit intrinsic trait axes (PCA/LDA) from the model's labeled samples and attach them as ``kind='intrinsic'`` traits (DR 035). Draft-only. Returns 202 + run id on enqueue; the model enters ``busy`` (``last_operation.kind='discover'``) and returns to ``draft`` with the new traits visible on ``GET /traits`` at completion. 409 + ``X-Run-Id`` on an idempotency hit (same sample set + effort).",
+        "description": "Derive intrinsic traits from the model's labelled samples and attach them. Draft-only. Returns 202 with a run id once enqueued; the model enters the ``busy`` state and returns to ``draft`` with the new traits visible on ``GET …/traits`` when discovery completes. A repeat of an in-flight or completed run with the same samples and effort returns 409 with the existing run id in ``X-Run-Id``.",
         "operationId": "discover_traits_models__handle__traits_discover_post",
         "parameters": [
           {
@@ -1048,16 +1164,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1068,8 +1174,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1078,8 +1184,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1108,6 +1214,16 @@
               }
             }
           },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1118,6 +1234,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/traits/discover \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"effort\": \"medium\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, time, requests\n\nbase = \"https://u22a8.ai/v1/models/acme.support-tone\"\nheaders = {\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"}\n\nrequests.post(f\"{base}/traits/discover\", headers=headers,\n              json={\"effort\": \"medium\"})\n# Discovery runs asynchronously; poll the model until it leaves `busy`.\nwhile requests.get(base, headers=headers).json()[\"state\"] == \"busy\":\n    time.sleep(5)"
+          }
+        ],
+        "x-mint": {
+          "content": "Derives intrinsic traits from the model's samples and attaches them. Draft-only and asynchronous: it returns `202` with a run id, the model enters `busy`, and the new traits appear on `GET …/traits` once it returns to `draft`. Poll `GET …/models/{handle}` for the state — there is no run resource to fetch."
         }
       }
     },
@@ -1127,7 +1258,7 @@
           "Models"
         ],
         "summary": "Get one trait",
-        "description": "One trait's metadata, including the DR 035 fields — ``kind`` and, for discovered intrinsic traits, ``discrimination`` / ``explained_variance`` / ``anchor_sample_ids``. ``key`` matches by trait key or name.",
+        "description": "One trait's metadata. Includes its ``kind`` and, for discovered (intrinsic) traits, the discovery diagnostics — ``discrimination``, ``explained_variance``, and ``anchor_sample_ids``. ``key`` matches by trait key or name.",
         "operationId": "get_trait_models__handle__traits__key__get",
         "parameters": [
           {
@@ -1175,26 +1306,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1235,6 +1346,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1245,7 +1376,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/acme.support-tone/traits/warmth \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/acme.support-tone/traits/warmth\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -1309,26 +1452,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1339,8 +1462,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1349,8 +1472,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1379,6 +1502,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1389,6 +1532,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X PATCH https://u22a8.ai/v1/models/acme.support-tone/traits/warmth \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"description\": \"How warm and personable the reply reads\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.patch(\n    \"https://u22a8.ai/v1/models/acme.support-tone/traits/warmth\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"description\": \"How warm and personable the reply reads\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       },
       "delete": {
@@ -1443,26 +1601,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1503,6 +1641,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1513,6 +1671,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X DELETE https://u22a8.ai/v1/models/acme.support-tone/traits/warmth \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.delete(\n    \"https://u22a8.ai/v1/models/acme.support-tone/traits/warmth\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -1571,26 +1744,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1601,8 +1754,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1611,8 +1764,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1641,6 +1794,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1651,6 +1824,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/samples \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"samples\": [{\"trait\": \"warmth\", \"text\": \"Happy to help — let us sort this out together.\", \"quality\": 1.0}, {\"trait\": \"warmth\", \"text\": \"Request denied. Refer to the policy.\", \"quality\": 0.0}]}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/models/acme.support-tone/samples\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"samples\": [\n        {\"trait\": \"warmth\", \"text\": \"Happy to help \\u2014 let us sort this out together.\", \"quality\": 1.0},\n        {\"trait\": \"warmth\", \"text\": \"Request denied. Refer to the policy.\", \"quality\": 0.0},\n    ]},\n)\nprint(r.json()[\"ids\"])"
+          }
+        ],
+        "x-mint": {
+          "content": "Each sample labels one trait: `quality` `1.0` is the positive pole, `0.0` the negative. Up to 500 samples per request.\n\n<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       },
       "get": {
@@ -1741,26 +1929,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1801,6 +1969,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1811,7 +1999,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl \"https://u22a8.ai/v1/models/acme.support-tone/samples?trait=warmth&limit=100\" \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/acme.support-tone/samples\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    params={\"trait\": \"warmth\", \"limit\": 100},\n)"
+          }
+        ]
       }
     },
     "/models/{handle}/samples/{sample_id}": {
@@ -1867,26 +2067,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -1927,6 +2107,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -1937,6 +2137,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X DELETE https://u22a8.ai/v1/models/acme.support-tone/samples/4217 \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.delete(\n    \"https://u22a8.ai/v1/models/acme.support-tone/samples/4217\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -1946,7 +2161,7 @@
           "Models"
         ],
         "summary": "Train (or re-tune)",
-        "description": "Lifecycle entry point (DR 032). From ``draft``: cold-start (bundling + synthesis + Bayesian sweep + fit). From ``ready`` + ``reoptimize_params=true``: fresh sweep. From ``ready`` without the flag: no-op — buffered retrains run automatically. Returns 202 + run id on enqueue, 409 + ``X-Run-Id`` on idempotency hit.",
+        "description": "Train the model or re-tune it. From ``draft``, a first call runs a full training pass and moves the model to ``ready``. From ``ready``, set ``reoptimize_params=true`` to run a fresh parameter search; without it the call is a no-op, since routine retraining on new samples happens automatically. Returns 202 with a run id once enqueued; a matching in-flight run returns 409 with its id in ``X-Run-Id``.",
         "operationId": "train_model_models__handle__train_post",
         "parameters": [
           {
@@ -2015,16 +2230,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2035,8 +2240,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2045,8 +2250,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2075,6 +2280,16 @@
               }
             }
           },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2085,6 +2300,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/train \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"effort\": \"medium\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, time, requests\n\nbase = \"https://u22a8.ai/v1/models/acme.support-tone\"\nheaders = {\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"}\n\nrequests.post(f\"{base}/train\", headers=headers, json={\"effort\": \"medium\"})\n# Training runs asynchronously; poll until the model is ready.\nwhile requests.get(base, headers=headers).json()[\"state\"] == \"busy\":\n    time.sleep(10)"
+          }
+        ],
+        "x-mint": {
+          "content": "Asynchronous: a first train from `draft` returns `202` with a run id and moves the model through `busy` to `ready`. Poll `GET …/models/{handle}` for the state. From a `ready` model, pass `reoptimize_params: true` to force a fresh parameter search; otherwise routine retraining on new samples happens automatically."
         }
       }
     },
@@ -2138,26 +2368,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2168,8 +2378,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2178,8 +2388,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2200,6 +2410,26 @@
           },
           "404": {
             "description": "No such model, trait, sample, or version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2234,6 +2464,26 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message/score \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: text/plain\" \\\n  --data-binary 'Fix race condition in worker dispatch by draining the in-flight queue before shutdown'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/models/u22a8.commit-message/score\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"content\": \"Fix race condition in worker dispatch by draining the in-flight queue before shutdown\"},\n)\ncard = r.json()\nprint(card[\"composite\"], card[\"scores\"])"
+          },
+          {
+            "lang": "bash",
+            "label": "cURL (text view)",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message/score \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Accept: text/plain\" \\\n  -H \"Content-Type: text/plain\" \\\n  --data-binary 'Fix race condition in worker dispatch'"
+          }
+        ],
+        "x-mint": {
+          "content": "Send `content` as JSON, or the raw text with `Content-Type: text/plain`. A URL in `content` is fetched and its extracted text is scored. Set `Accept: text/plain` for a bar-chart rendering instead of JSON. An optional `feedback` map captures labels as new samples for continuous learning. The full response shape is documented in [the score card](/concepts/score-card)."
         }
       }
     },
@@ -2297,26 +2547,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2327,8 +2557,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2337,8 +2567,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2367,6 +2597,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2377,6 +2627,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/u22a8.commit-message/compare \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"a\": \"fix bug\", \"b\": \"Fix race condition in worker dispatch by draining the in-flight queue before shutdown\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/models/u22a8.commit-message/compare\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\n        \"a\": \"fix bug\",\n        \"b\": \"Fix race condition in worker dispatch by draining the in-flight queue before shutdown\",\n    },\n)\nprint(r.json()[\"improvement\"], r.json()[\"per_trait\"])"
+          }
+        ],
+        "x-mint": {
+          "content": "Scores a baseline `a` against a candidate `b` and returns the per-trait delta plus the overall improvement (`b.composite − a.composite`). URLs in `a` and `b` are auto-fetched. Set `Accept: text/plain` for a side-by-side rendering."
         }
       }
     },
@@ -2386,7 +2651,7 @@
           "Extract"
         ],
         "summary": "Fetch a URL and extract its text",
-        "description": "Resolve a URL to clean text. Reuses the same fetch + readability extractor as the score endpoint. Returns a content hash for dedup. Used by the SDK importer to resolve URL sources at import time so training data stays deterministic.",
+        "description": "Fetch a URL and return its extracted text — the same readable text the score endpoint scores when given a URL. Includes a content hash for deduplication.",
         "operationId": "extract_extract_post",
         "requestBody": {
           "content": {
@@ -2419,26 +2684,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2449,8 +2694,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2459,8 +2704,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2489,6 +2734,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2499,6 +2764,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/extract \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"url\": \"https://example.com/article\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.post(\n    \"https://u22a8.ai/v1/extract\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"url\": \"https://example.com/article\"},\n)\nprint(r.json()[\"content_sha256\"])"
+          }
+        ],
+        "x-mint": {
+          "content": "Returns the same readable text the score endpoint extracts from a URL, plus a content hash for deduplication. Useful to preview what will be scored."
         }
       }
     },
@@ -2508,7 +2788,7 @@
           "Versions"
         ],
         "summary": "List versions",
-        "description": "List a model's param snapshots, newest first. Cursor is the smallest ``version_no`` from the previous page.",
+        "description": "List a model's versions, newest first. Each version is a snapshot of the trained parameters. The cursor is the lowest ``version_no`` from the previous page.",
         "operationId": "list_versions_models__handle__versions_get",
         "parameters": [
           {
@@ -2575,26 +2855,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2635,6 +2895,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2645,7 +2925,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/acme.support-tone/versions \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/acme.support-tone/versions\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)\nfor v in r.json()[\"items\"]:\n    print(v[\"version_no\"], v[\"tags\"])"
+          }
+        ]
       }
     },
     "/models/{handle}/versions/{v}": {
@@ -2654,7 +2946,7 @@
           "Versions"
         ],
         "summary": "Get a version",
-        "description": "Resolve a ``\"vN\"`` or tag name to its full snapshot. The ``snapshot`` field carries per-trait axes/artifacts and is heavy; for metadata-only access, use the list endpoint instead.",
+        "description": "Resolve a ``\"vN\"`` number or tag name to its full version, including the ``snapshot`` of trained parameters. The snapshot is large; for metadata only, use the list endpoint instead.",
         "operationId": "get_version_models__handle__versions__v__get",
         "parameters": [
           {
@@ -2702,26 +2994,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2762,6 +3034,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2772,6 +3064,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://u22a8.ai/v1/models/acme.support-tone/versions/v3 \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/acme.support-tone/versions/v3\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "Accepts a `vN` number or a tag name. The response includes the full `snapshot` of trained parameters, which is large; for metadata only, use the list endpoint."
         }
       }
     },
@@ -2829,26 +3136,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -2889,6 +3176,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -2899,6 +3206,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/versions/prod \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.post(\n    \"https://u22a8.ai/v1/models/acme.support-tone/versions/prod\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "Pins the tag `{name}` to the model's current active version. Re-using a tag moves the pointer. Tag names of the form `vN` are rejected so the version-number space stays unambiguous."
         }
       },
       "delete": {
@@ -2953,26 +3275,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -3013,6 +3315,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -3023,7 +3345,19 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X DELETE https://u22a8.ai/v1/models/acme.support-tone/versions/prod \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\""
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.delete(\n    \"https://u22a8.ai/v1/models/acme.support-tone/versions/prod\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n)"
+          }
+        ]
       }
     },
     "/models/{handle}/versions/active": {
@@ -3032,7 +3366,7 @@
           "Versions"
         ],
         "summary": "Activate a version (rollback / pin)",
-        "description": "Swap ``models.current_version_id`` to the resolved version. Non-destructive: samples continue to accumulate against the latest sample set; buffered retrains continue to mint ``vN+1`` regardless of which version is currently active.",
+        "description": "Activate a version — point the model at the resolved version so it serves scores. Use it to roll back or pin. Non-destructive: new samples keep accumulating and automatic retraining keeps minting new versions regardless of which one is active.",
         "operationId": "activate_version_models__handle__versions_active_put",
         "parameters": [
           {
@@ -3081,26 +3415,6 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "503": {
             "description": "An upstream dependency (database or model service) is unavailable.",
             "content": {
@@ -3111,8 +3425,8 @@
               }
             }
           },
-          "413": {
-            "description": "Request body exceeds the size limit.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3121,8 +3435,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "413": {
+            "description": "Request body exceeds the size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3151,6 +3465,26 @@
               }
             }
           },
+          "409": {
+            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
@@ -3161,6 +3495,21 @@
               }
             }
           }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl -X PUT https://u22a8.ai/v1/models/acme.support-tone/versions/active \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"version\": \"v3\"}'"
+          },
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "import os, requests\n\nrequests.put(\n    \"https://u22a8.ai/v1/models/acme.support-tone/versions/active\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    json={\"version\": \"v3\"},  # or {\"tag\": \"prod\"}\n)"
+          }
+        ],
+        "x-mint": {
+          "content": "Points the model at the chosen version so it serves scores — use it to roll back or pin. Send **exactly one** of `version` (a `vN` number) or `tag`. Non-destructive: new samples keep accumulating and automatic retraining keeps minting versions regardless of which one is active."
         }
       }
     }
@@ -3345,7 +3694,7 @@
           "zero_data_retention": {
             "type": "boolean",
             "title": "Zero Data Retention",
-            "description": "Per-model zero data retention opt-in (DR 032 § ZDR). When True, samples are purged at every training completion, the buffered retrain worker skips this model, and ``POST /score { feedback }`` is rejected.",
+            "description": "Enable zero-data-retention. When True, samples are purged at every training completion, automatic retraining is disabled, and ``POST /score`` with a ``feedback`` block is rejected.",
             "default": false
           }
         },
@@ -3354,7 +3703,7 @@
           "handle"
         ],
         "title": "CreateModelRequest",
-        "description": "``POST /v1/models`` body. ``handle`` is required and must be in a\nnamespace the caller's key owns (U22-20)."
+        "description": "``POST /v1/models`` body. ``handle`` is required and must be in a\nnamespace the caller's key owns."
       },
       "DeleteResponse": {
         "properties": {
@@ -3386,12 +3735,12 @@
               }
             ],
             "title": "Effort",
-            "description": "DR 031 effort dial — ``low|medium|high|xhigh|max``. Decoded into discovery knobs (trait cap, interpretation budget) by ``oa/training/effort.py``; ``null`` falls through to ``DEFAULT_EFFORT``. No per-knob overrides (DR 035 §5)."
+            "description": "How much cost and time to spend on discovery: ``low|medium|high|xhigh|max``. Higher levels consider more candidate traits. Omit to use the default."
           }
         },
         "type": "object",
         "title": "DiscoverRequest",
-        "description": "``POST /v1/models/{handle}/traits/discover`` body (DR 035). Effort-only.\n\nDraft-only. Pools the model's labeled samples, fits intrinsic trait axes\n(PCA/LDA), and attaches them as ``kind='intrinsic'`` traits. Response is\nthe shared :class:`TrainResponse` (202 + run id on enqueue, 409 +\n``X-Run-Id`` on idempotency hit) — discovery is just another async\nlifecycle transition."
+        "description": "``POST /v1/models/{handle}/traits/discover`` body. Effort-only.\n\nDraft-only. Pools the model's labelled samples, derives intrinsic trait\naxes, and attaches them as ``intrinsic`` traits. Responds like train —\n202 + run id on enqueue, 409 + ``X-Run-Id`` on a matching in-flight run."
       },
       "ExtractRequest": {
         "properties": {
@@ -3481,7 +3830,7 @@
           "state": {
             "type": "string",
             "title": "State",
-            "description": "Lifecycle state (DR 032 amended by DR 035): ``draft|busy|ready|failed|archived``. ``busy`` is the generic transient state for any async operation — see ``last_operation.kind`` for the mechanism.",
+            "description": "Lifecycle state: ``draft``, ``busy``, ``ready``, ``failed``, or ``archived``. ``busy`` is the transient state while an asynchronous operation (training, discovery, retraining) runs — see ``last_operation`` for which one.",
             "default": "ready",
             "examples": [
               "draft",
@@ -3522,7 +3871,7 @@
               }
             ],
             "title": "Current Version Id",
-            "description": "BIGINT id of the ``model_versions`` row whose snapshot currently serves scoring. NULL pre-first-train. Updates atomically on every successful train/retrain. (Pre-U22-28 this field carried a TEXT run id; clients pinned to the old shape need to update.)"
+            "description": "Identifier of the version currently serving scores. Null before the first successful train; updates on every successful train or retrain."
           },
           "version_no": {
             "anyOf": [
@@ -3534,7 +3883,7 @@
               }
             ],
             "title": "Version No",
-            "description": "Monotonic per-model version number of the active snapshot (the integer behind ``vN``). NULL pre-first-train."
+            "description": "Version number of the active snapshot — the integer behind ``vN``. Null before the first train."
           },
           "version_tags": {
             "items": {
@@ -3547,7 +3896,7 @@
           "zero_data_retention": {
             "type": "boolean",
             "title": "Zero Data Retention",
-            "description": "Per-model ZDR opt-in (DR 032 § ZDR).",
+            "description": "Whether zero-data-retention is enabled. When on, submitted content is not retained.",
             "default": false
           },
           "last_operation": {
@@ -3561,7 +3910,7 @@
               }
             ],
             "title": "Last Operation",
-            "description": "Most recent lifecycle transition (DR 035): ``{kind, status, started_at, run_id?, progress?, error?}``. ``kind`` names the mechanism behind a ``busy`` state (``train|discover|retune|retrain_buffered|diagnose``). NULL on models that have never had a lifecycle operation.",
+            "description": "The most recent lifecycle operation: ``{kind, status, started_at, run_id?, progress?, error?}``. ``kind`` identifies what the model is doing while ``busy`` (e.g. ``train``, ``discover``, ``retrain``). Null on models that have never run an operation.",
             "examples": [
               {
                 "kind": "train",
@@ -3919,7 +4268,7 @@
         },
         "type": "object",
         "title": "ScoreMetadata",
-        "description": "Audit / lifecycle metadata attached to a score response (DR 032).\n\n``version_id`` is the active param-snapshot the score served from,\nformatted as ``\"vN\"`` to match the pinned-handle form (``handle@vN``).\n``null`` pre-first-train. ``sample_ids`` is populated only when the\nrequest included a ``feedback`` block — one id per trait whose\nfeedback was captured."
+        "description": "Audit and lifecycle metadata attached to a score response.\n\n``version_id`` is the active snapshot the score served from, formatted\nas ``\"vN\"`` to match the pinned-handle form (``handle@vN``); ``null``\nbefore the first train. ``sample_ids`` is populated only when the\nrequest included a ``feedback`` block — one id per trait whose feedback\nwas captured."
       },
       "ScoreResponse": {
         "properties": {
@@ -3985,18 +4334,18 @@
               }
             ],
             "title": "Effort",
-            "description": "DR 031 effort dial — ``low|medium|high|max``. Affects the Bayesian-sweep budget on cold-start and re-tune. Ignored for buffered retrains (no sweep)."
+            "description": "How much cost and time to spend tuning: ``low|medium|high|max``. Higher levels search more thoroughly. Ignored for automatic retraining."
           },
           "reoptimize_params": {
             "type": "boolean",
             "title": "Reoptimize Params",
-            "description": "When True, force a fresh Bayesian sweep from a ``ready`` model. When False, ``ready`` is a no-op (buffered retraining handles the incremental update path).",
+            "description": "When True, force a fresh parameter search from a ``ready`` model. When False, a ``ready`` model is a no-op (automatic retraining handles incremental updates).",
             "default": false
           }
         },
         "type": "object",
         "title": "TrainRequest",
-        "description": "``POST /v1/models/{handle}/train`` body. All fields optional.\n\nFrom ``draft``: kicks off cold-start training (transitions to\n``training``). From ``ready`` + ``reoptimize_params=True``: kicks off a\nfresh Bayesian sweep. From ``ready`` without ``reoptimize_params``: no-op\n(buffered retrains run automatically based on sample-add triggers)."
+        "description": "``POST /v1/models/{handle}/train`` body. All fields optional.\n\nFrom ``draft``, starts a first training pass (the model moves to\n``busy``, then ``ready``). From ``ready`` with\n``reoptimize_params=True``, runs a fresh parameter search. From\n``ready`` without it, a no-op — routine retraining on new samples runs\nautomatically."
       },
       "TrainResponse": {
         "properties": {
@@ -4111,7 +4460,7 @@
           "kind": {
             "type": "string",
             "title": "Kind",
-            "description": "DR 035 definition mode: ``extrinsic`` (labels are the trait, axis re-derived every train) or ``intrinsic`` (axis is the trait, frozen across re-trains — produced by discovery).",
+            "description": "How the trait is defined: ``extrinsic`` (taught directly by labelled samples; its axis is re-derived on every train) or ``intrinsic`` (the axis itself is the trait, produced by discovery and held fixed across retrains).",
             "default": "extrinsic",
             "examples": [
               "extrinsic"
@@ -4127,7 +4476,7 @@
               }
             ],
             "title": "Discrimination",
-            "description": "Discriminator strength in [0, 1] for discovered traits (1.0 = perfect separation, 0.5 = chance). NULL for authored."
+            "description": "Discriminator strength in [0, 1] for discovered traits (1.0 = perfect separation, 0.5 = chance). Null for authored."
           },
           "explained_variance": {
             "anyOf": [
@@ -4139,7 +4488,7 @@
               }
             ],
             "title": "Explained Variance",
-            "description": "Variance the intrinsic axis explains (PCA/LDA). NULL for extrinsic."
+            "description": "Fraction of variance the intrinsic axis explains. Null for extrinsic traits."
           },
           "anchor_sample_ids": {
             "anyOf": [
@@ -4152,7 +4501,7 @@
               }
             ],
             "title": "Anchor Sample Ids",
-            "description": "Positive/negative exemplar sample ids anchoring an intrinsic axis (``{positive: [...], negative: [...]}``). NULL for extrinsic."
+            "description": "Positive/negative exemplar sample ids anchoring an intrinsic axis (``{positive: [...], negative: [...]}``). Null for extrinsic."
           }
         },
         "type": "object",
@@ -4405,7 +4754,7 @@
               }
             ],
             "title": "Zero Data Retention",
-            "description": "Toggle ZDR (DR 032 § ZDR). ``False → True`` purges existing samples atomically with the column update. ``True → False`` enables retention forward only — past purges are not reversed."
+            "description": "Toggle zero-data-retention. Turning it on purges existing samples. Turning it off applies going forward only — earlier purges are not reversed."
           },
           "version_retention_policy": {
             "anyOf": [
@@ -4418,7 +4767,7 @@
               }
             ],
             "title": "Version Retention Policy",
-            "description": "Auto-prune policy override (U22-28). Keys: ``keep_unnamed`` (int, default 100), ``keep_first_of_month`` (bool, default True). NULL clears the override and reverts to defaults.",
+            "description": "Auto-prune policy override. Keys: ``keep_unnamed`` (int, default 100), ``keep_first_of_month`` (bool, default True). Null clears the override and reverts to defaults.",
             "examples": [
               {
                 "keep_first_of_month": true,
@@ -4430,7 +4779,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "UpdateModelRequest",
-        "description": "``PATCH /v1/models/{handle}`` body. Missing fields = no change.\n\n``state`` is intentionally **not** patchable (DR 035): lifecycle state\nis owned by the FSM (``oa.store.lifecycle.transition``). Use ``POST\n/train`` to move ``draft → ready`` and ``DELETE`` to archive. Unknown\nfields (including ``state``) are rejected so the contract is explicit\nrather than a silent no-op."
+        "description": "``PATCH /v1/models/{handle}`` body. Missing fields mean no change.\n\n``state`` is intentionally **not** patchable: move a model with\n``POST /train`` (``draft → ready``) or ``DELETE`` (archive), never a\n``PATCH`` override. Unknown fields (including ``state``) are rejected so\nthe contract is explicit rather than a silent no-op."
       },
       "UpdateTraitRequest": {
         "properties": {
@@ -4615,7 +4964,7 @@
               }
             ],
             "title": "Snapshot",
-            "description": "Self-contained params blob — per-trait axes and artifacts. Heavy; omitted on scoring-scope reads."
+            "description": "Self-contained trained-parameter snapshot. Large; omitted on scoring-scope reads."
           }
         },
         "type": "object",
@@ -4791,7 +5140,7 @@
               }
             ],
             "default": null,
-            "description": "Optional ``{trait_key_or_name: label_or_quality}`` map for continuous learning (U22-59, DR 032). When supplied, each entry is captured as a labeled sample alongside the score and feeds the buffered retrain trigger. Values may be a polarity label (``\"positive\"|\"negative\"|\"good\"|...``) or a float in ``[0, 1]``. Rejected with ``feature_unavailable`` on models with ``zero_data_retention=true``.",
+            "description": "Optional ``{trait_key_or_name: label_or_quality}`` map for continuous learning. When supplied, each entry is captured as a labelled sample alongside the score. Values may be a polarity label (``\"positive\"|\"negative\"|\"good\"|...``) or a float in ``[0, 1]``. Rejected with ``feature_unavailable`` on models with zero-data-retention enabled.",
             "examples": [
               {
                 "clarity": "positive",

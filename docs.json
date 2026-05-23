@@ -65,6 +65,18 @@
           {
             "group": "Endpoints",
             "openapi": "api-reference/openapi.json"
+          },
+          {
+            "group": "MCP server",
+            "pages": [
+              "api-reference/mcp"
+            ]
+          },
+          {
+            "group": "Authoring schemas",
+            "pages": [
+              "api-reference/authoring-schemas"
+            ]
           }
         ]
       }

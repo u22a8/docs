@@ -1,0 +1,123 @@
+---
+title: "Authoring schemas"
+description: "The published model.yaml and JSONL sample format for defining a model as files."
+icon: "file-code"
+---
+
+A model can be defined as files: a `model.yaml` that declares its traits and where training data comes from, alongside JSONL files of labelled samples. Both formats are published as JSON Schemas, so a model repository can validate its inputs in CI without depending on the platform.
+
+| Schema | Describes |
+|--------|-----------|
+| [`model.schema.json`](https://u22a8.ai/schemas/model.schema.json) | The `model.yaml` configuration. |
+| [`samples.schema.json`](https://u22a8.ai/schemas/samples.schema.json) | One line of a training JSONL file. |
+
+<Note>
+This is the **file-based authoring** path — used for local builds and version-controlled model repositories. The hosted path defines the same model through the [REST API](/api-reference/introduction) or [MCP server](/api-reference/mcp); traits and samples there are sent as JSON request bodies rather than files.
+</Note>
+
+## model.yaml
+
+`model.yaml` declares one model. `traits` is the only required field.
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `traits` | yes | The [traits](/concepts/traits) the model measures — a list of trait objects, or the string `discover` to derive them from data. |
+| `description` | no | One-line summary shown on the model. |
+| `sources` | no | Where training samples come from (see [Sources](#sources)). |
+| `effort` | no | Build cost and quality: `low`, `medium`, `high`, `xhigh`, or `max`. Defaults to `high`. |
+| `additional_terms` | no | Extra terms of use shown on the model card. Their presence prompts callers to acknowledge them. |
+| `upstream_sources` | no | Provenance for datasets used — name, license, citation. Displayed as attribution. |
+
+A trait object describes one axis of judgment:
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `type` | yes | The [trait type](/concepts/score-types): `spectrum`, `topic`, `claim`, or `outlier`. |
+| `key` | yes | Stable identifier — lowercase letters, digits, `_`, and `-`. |
+| `name` | no | Display name. Defaults to the title-cased key. |
+| `description` | no | What the trait measures. |
+| `positive_label` / `negative_label` | no | The two poles, e.g. `warm` / `cold`. |
+| `aggregation` | no | How per-segment scores combine: `mean` (default), `max`, `min`, or `none`. |
+
+Each trait type also accepts authoring paraphrases — short exemplars of each pole that seed training when no dataset is supplied. See [Score types](/concepts/score-types) for what each type measures.
+
+```yaml model.yaml
+description: Warmth and clarity of support replies
+effort: high
+
+traits:
+  - type: spectrum
+    key: warmth
+    name: Warmth
+    positive_label: warm
+    negative_label: cold
+  - type: spectrum
+    key: clarity
+    name: Clarity
+    positive_label: clear
+    negative_label: confusing
+
+sources:
+  - type: jsonl
+    path: samples/replies.jsonl
+    mapping:
+      warmth: { trait: warmth }
+      clarity: { trait: clarity }
+```
+
+### Sources
+
+A source supplies training samples. Each entry has a `type`; the remaining fields depend on it.
+
+| `type` | Provides |
+|--------|----------|
+| `jsonl` | Lines from a local JSONL file, mapped to traits. |
+| `csv` / `github_csv` | Columns from a CSV file, local or in a GitHub repository. |
+| `huggingface` | Rows from a Hugging Face dataset split. |
+| `url` / `file` | A single document, fetched by URL or read from a path. |
+| `noise` | Background negative samples drawn from a dataset. |
+
+## Samples (JSONL)
+
+A samples file has one JSON object per line. Each object carries the `content` to learn from and one field per trait it labels. A trait field's value is either a quality label or a number in `[0, 1]`, where `1.0` is the positive pole and `0.0` the negative.
+
+```jsonl samples/replies.jsonl
+{"content": "Happy to help — let's sort this out together.", "warmth": "warm", "clarity": "clear"}
+{"content": "Request denied. Refer to the policy.", "warmth": "cold", "clarity": 0.7}
+```
+
+Accepted quality labels span the range from positive to negative: `positive`, `good`, `yes`, `high`, `strong`, `excellent`; `fair`, `moderate`, `mixed`, `medium`; `poor`, `no`, `low`, `weak`, `bad`, `negative`. The field names in each line are mapped to traits by the `mapping` of the `jsonl` source that reads the file.
+
+## Validate
+
+Validate authoring files against the published schemas with any JSON Schema validator. Doing this in CI catches a malformed `model.yaml` before a build.
+
+```python validate.py
+import json, urllib.request, yaml, jsonschema
+
+def load(url):
+    return json.load(urllib.request.urlopen(url))
+
+model_schema = load("https://u22a8.ai/schemas/model.schema.json")
+samples_schema = load("https://u22a8.ai/schemas/samples.schema.json")
+
+# model.yaml
+jsonschema.validate(yaml.safe_load(open("model.yaml")), model_schema)
+
+# each JSONL line
+for line in open("samples/replies.jsonl"):
+    jsonschema.validate(json.loads(line), samples_schema)
+
+print("valid")
+```
+
+## Next
+
+<Columns cols={2}>
+  <Card title="Score types" icon="shapes" href="/concepts/score-types">
+    What each trait type measures.
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    Define the same model over HTTP.
+  </Card>
+</Columns>

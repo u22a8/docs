@@ -1,0 +1,118 @@
+---
+title: "MCP server"
+description: "Score, read, and author models from an AI client over the Model Context Protocol."
+icon: "plug"
+---
+
+The U+22A8 **MCP server** exposes the platform to AI clients over the [Model Context Protocol](https://modelcontextprotocol.io). An agent connected to it can read models, score and compare content, and author and train models — the same operations as the [REST API](/api-reference/introduction), bound to the same namespaces, reached through tool calls instead of HTTP requests.
+
+```
+https://u22a8.ai/mcp
+```
+
+<Note>
+This is the **product** MCP server — it scores content. It is distinct from the documentation MCP that this site hosts for answering questions about the docs. When a client lists both, the product server is the one at `u22a8.ai/mcp`.
+</Note>
+
+## Authentication
+
+The server authenticates with **OAuth**, not a static key. On first connection a client opens a browser sign-in; once authorized, the session reaches the same models a [REST key](/authentication) would and respects the same namespace ownership — a session authors only in namespaces it owns and reads its own plus the public catalog (`u22a8`, `live`, `bench`).
+
+Any MCP client that supports remote servers with OAuth discovers the authorization server and runs the flow automatically. No key is pasted into client configuration.
+
+## Connect
+
+Point an MCP client at the server URL. Two common forms:
+
+<CodeGroup>
+```bash Claude Code
+claude mcp add --transport http u22a8 https://u22a8.ai/mcp
+```
+
+```json Client config
+{
+  "mcpServers": {
+    "u22a8": {
+      "url": "https://u22a8.ai/mcp"
+    }
+  }
+}
+```
+</CodeGroup>
+
+The client prompts for sign-in the first time a tool is called. After that, ask the agent to score against a model from the catalog:
+
+<Prompt description="Score text from an AI client">
+Score this commit message against the `u22a8.commit-message` model and report each trait with its tier: "Fix race condition in worker dispatch by draining the in-flight queue before shutdown".
+</Prompt>
+
+## Tools
+
+Tools are grouped by what they do. Reading and scoring tools work against any model a session can read; authoring and lifecycle tools require ownership of the model's namespace.
+
+### Reading
+
+| Tool | Purpose |
+|------|---------|
+| `list_models` | List models in a namespace (defaults to the public catalog). |
+| `get_model` | Fetch one model's metadata. |
+| `list_traits` | List a model's traits with sample counts and polarity labels. |
+| `list_samples` | List a model's training samples, filtered by trait. |
+| `list_versions` | List a model's versions, newest first. |
+| `get_version` | Fetch one version's snapshot by `vN` number or tag. |
+
+### Scoring
+
+| Tool | Purpose |
+|------|---------|
+| `score` | Score content against a model's traits. Accepts a `feedback` map to capture labels as new samples. |
+| `compare` | Score two texts and return the per-trait delta and overall improvement. |
+| `extract` | Fetch a URL and return its extracted text — the same text `score` would read. |
+
+### Authoring
+
+Authoring tools mutate a draft model. Trait and sample edits apply only while the model is in the `draft` state.
+
+| Tool | Purpose |
+|------|---------|
+| `create_model` | Create a draft model in a namespace you own. |
+| `update_model` | Patch model metadata. |
+| `delete_model` | Archive a model. |
+| `add_traits` | Add or replace traits. |
+| `update_trait` | Edit one trait. |
+| `delete_trait` | Remove one trait. |
+| `add_samples` | Append labelled samples. |
+| `delete_sample` | Remove one sample. |
+
+### Lifecycle
+
+| Tool | Purpose |
+|------|---------|
+| `train` | Train a draft model, or re-tune a ready one. Runs asynchronously. |
+| `discover_traits` | Derive intrinsic traits from a draft model's samples. Runs asynchronously. |
+| `tag_version` | Pin a tag to the active version. |
+| `untag_version` | Remove a tag. |
+| `activate_version` | Point the model at a version — roll back or pin. |
+
+`train` and `discover_traits` return once the run is enqueued; the model reports a `busy` state until the run completes. Poll `get_model` for the state rather than waiting on the call.
+
+## Models as resources
+
+Beyond tools, the server publishes each readable model as an MCP **resource**. `resources/list` enumerates the models a session can read; reading a model's URI returns its **model card** — the same markdown summary `GET /v1/models/{handle}` returns with `Accept: text/markdown`, covering the model's description, current version, traits, and any additional terms.
+
+```
+https://u22a8.ai/v1/models/{handle}
+```
+
+Read a model's card before scoring against it to understand what each trait measures and on what terms.
+
+## Next
+
+<Columns cols={2}>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    The same operations over HTTP.
+  </Card>
+  <Card title="Score card" icon="table-list" href="/concepts/score-card">
+    What the score tools return.
+  </Card>
+</Columns>

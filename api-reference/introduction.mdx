@@ -70,7 +70,7 @@ A URL in `content` is fetched and its extracted text is scored. Set `Accept: tex
 |---------|----------|
 | Base URL | `https://u22a8.ai/v1` |
 | Auth | `Authorization: Bearer <key>` on every endpoint |
-| Format | JSON request and response; `score` and `compare` also accept raw text |
+| Format | JSON request and response; `score` also accepts a raw-text body, and `score`/`compare` can return a `text/plain` view |
 | Pagination | Cursor-based; list responses return a `next` cursor |
 | Errors | One error envelope; every response carries a request id |
 
