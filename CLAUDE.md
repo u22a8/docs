@@ -32,7 +32,7 @@ The audience is **anyone integrating or evaluating the platform** — developers
 - **Composite** — harmonic mean of per-trait scores.
 - **Lifecycle** (DR 032 — *the model is the API contract*) — `draft → training → ready` (plus `failed`, `archived`). One pattern for everything: **create a model → add samples → train → score** (with optional `feedback` for online learning). Versions are snapshots with named tags and rollback. Trait and sample mutations are **draft-only** (DR 035); discovery is a draft-only transition.
 
-Retired terms — **never use**: "resonance profile", "profile" (→ *model*), "micro model", "dimension" (→ *trait*), the tuning-fork metaphor. The `dev.*` namespace is retired (do not mention it).
+Retired terms — **never use**: "resonance profile", "profile" (→ *model*), "micro model", "dimension" (→ *trait*), the tuning-fork metaphor.
 
 ### Score-card field semantics (pin these — easy to get subtly wrong)
 
@@ -64,22 +64,24 @@ The **public programmatic surface is HTTP**: the REST API and the product MCP se
 
 **Authentication.** Developers issue an API key in the console and send `Authorization: Bearer <key>`. Keys carry a scope — **`scoring`** (read + score/compare) or **`authoring`** (full). A key authors only in namespaces it owns, and reads its own plus the public namespaces (`u22a8`, `live`, `bench`). MCP uses OAuth via WorkOS rather than a static key.
 
-> **The `oa` Python package is NOT the public client.** It connects via `DATABASE_URL` and is the in-process service layer behind REST/MCP (and a self-host/local-authoring tool). Never present `oa.connect(...)` as "how to use the hosted platform." Public integration is HTTP: REST, MCP, and the forthcoming TypeScript SDK. The `python -m oa` CLI and the local modeler plugin are *local authoring* (advanced/self-host audience) — keep them out of the primary integration path.
+> **The `oa` Python package is NOT the public client.** It is the in-process service layer behind REST/MCP, connecting directly to the datastore (and doubles as a self-host/local-authoring tool). Never present `oa.connect(...)` as "how to use the hosted platform." Public integration is HTTP: REST, MCP, and the forthcoming TypeScript SDK. The `python -m oa` CLI and the local modeler plugin are *local authoring* (advanced/self-host audience) — keep them out of the primary integration path.
 
 > **Two different "MCP" servers — keep them distinct.** Mintlify auto-hosts a **docs MCP** at this site's domain that answers questions *about the docs* (search + page read). That is **not** our product MCP at `u22a8.ai/mcp`, which scores content. When a page says "MCP," be explicit about which one.
 
 ## Content boundaries — never leak internals (DR 018 §4)
 
-Public docs document **observable behavior, inputs, outputs, guarantees, and failure modes** — not how it's built. The following must **never** appear in a published page:
+Public docs document **observable behavior, inputs, outputs, guarantees, and failure modes** — not how it's built. A published page must never name *how the product is built*, in any of these categories:
 
-- Internal module paths or package internals (`oa/engine`, `oa/store`, `oa/training`, `optimization/`, `ai/`, `templates/`, `notebooks/`).
-- Production infrastructure: the host/IP, Cloudflare, `docker-compose`, schema/migrations, backups, cron.
-- Unpublished repos (e.g. `qed-bench`) and any private benchmark internals.
-- Secrets and operator env vars (`POSTGRES_PASSWORD`, `COHERE_API_KEY`, `UNKEY_ROOT_KEY`, `WORKOS_API_KEY`, `DATABASE_URL`, …). The only env var a *reader* sees is `U22A8_API_KEY`.
-- Embedding-provider names / Bedrock model IDs, cost internals, the optimization-loop internals.
-- The retired `dev.*` namespace; the deprecated `/m/` and `/p/` surfaces as a *recommended* path (the token-free `/m/{handle}` exists but is unadvertised — do not feature it).
+- Internal module or package paths.
+- Production infrastructure and hosting: hosts/addresses, the CDN, container/orchestration, database schema and migrations, backups, cron.
+- Unpublished repos and private benchmark internals.
+- Secrets and operator environment variables. The only env var a *reader* ever sees is `U22A8_API_KEY`.
+- Embedding/model-provider names and model IDs; cost and optimization internals.
+- Retired or unadvertised surfaces and namespaces (only `u22a8.ai/v1`, `/mcp`, `/console`, and the published schemas are public).
 
 When in doubt, document the contract, not the mechanism. If an internal detail genuinely changes a reader's decision, state the *effect*, not the implementation.
+
+> The *specific* forbidden tokens — exact module paths, provider and infra names, env-var names, retired terms — are deliberately **not** enumerated here: this is a public repo, and the list itself is internal signal (it names the very things it forbids). They live in the `/police` sweep's leak scanner in the private monorepo, which scans this repo as a backstop. Don't reconstruct the list in this file.
 
 ## How pages must read (DR 018 — writing rubric, distilled)
 
@@ -114,7 +116,7 @@ DR 018 and DR 019 are **accepted** and are this site's foundation. DR 018 §6 pr
 - **Guides** tab — *Get started* (overview, quickstart, authentication), *How-to* guides, and *Concepts* grouped by domain (Scoring: score card, traits, tiers, breaks, headroom, confidence, composite, score types; Models & training: models, training, supervision, samples, briefs, discovery, calibration, versions/evolution).
 - **API reference** tab — REST API (auto-generated from the OpenAPI snapshot + curated overlays), MCP server, SDK (when shipped), authoring schemas.
 
-The current web `/docs` (18 pages, in the monorepo at `templates/docs/`) is the *inspiration* set, not a migration source. Rebuild from first principles per DR 018/019.
+The legacy web `/docs` (18 pages on the main site) is the *inspiration* set, not a migration source. Rebuild from first principles per DR 018/019.
 
 ## Mintlify mechanics
 
@@ -124,14 +126,14 @@ The current web `/docs` (18 pages, in the monorepo at `templates/docs/`) is the 
 - **Illustrations: inline SVG, never screenshots.** Concept figures are hand-authored SVG components in `/snippets/figures/*.jsx` (named export, e.g. `export const ScoreAxis = () => (...)`), imported per page and wrapped in `<Frame caption="…">` with a declarative-sentence caption (DR 018 §11). **Never screenshot the live UI** — the brand rule is "isolated illustrations, no screenshots" (DR 021), and screenshots rot; construct the figure from the same data the page already shows (the `score-card.mdx` figure mirrors its JSON). On-brand without Pro CSS (SVG carries its own styling, sidestepping the Pro-tier `style.css` blocker): use `fill`/`stroke="currentColor"` for ink and structure so figures adapt to light/dark. For data and markers use **cobalt `#1e3a8a`** — DR 021: cobalt is brand/data/status, and the composite marker is cobalt. For tier visuals use the **tier palette**: Strong `#1e3a8a` cobalt · Solid `#2e6b42` moss · Developing `#c17338` amber · Weak `#8a7f68` warm-dim. **Never use vermillion `#e2462c` in a figure** — it is the *action* color (links, buttons, CTAs) only; using it for data violates DR 021's action-vs-status discipline and floods the warm-cream page with more warm, killing contrast. Write **JSX-valid** SVG: camelCase attributes (`viewBox`, `strokeWidth`, `fillOpacity`, `textAnchor`, `strokeDasharray`), `style={{…}}` objects, and `style={{ width: "100%", height: "auto" }}` + `viewBox` for responsiveness. The Scoring set is the reference: `ScoreCardFigure`, `TraitsFigure`, the merged `tiers` page's trio (`ScoreAxis` = tier bands, `BreaksDistribution`, `HeadroomGap` — one targeted figure per section), `ConfidenceClusters`, `ScoreTypeGlyphs`, `CompositePull`. Reach for `Mermaid` only when the subject is a flow/relationship, not a figure.
 - **Agent-ready features are on by default** — every page has a `.md` mirror, `llms.txt`/`llms-full.txt` auto-generate, and Mintlify hosts a docs MCP. Use `<Visibility for="agents">` to give agents direct API calls where humans get UI steps; embed a `<Prompt>` with `npx skills add https://docs.u22a8.ai` on the getting-started page.
 - **API reference**: auto-generated from `api-reference/openapi.json` (a snapshot of `https://u22a8.ai/v1/openapi.json`). Customize per-endpoint with the `x-mint` OpenAPI extension (curated prose, the required `curl`/client example) rather than dropping to hand-written MDX. Refresh the snapshot deliberately (see drift below).
-- **Local dev**: `mint dev` (preview at :3000), `mint broken-links`, `mint openapi-check`. Deploy is automatic via the Mintlify GitHub app on push to the default branch; PRs get preview deployments.
+- **Local dev**: `mint dev` (preview at :3000), `mint broken-links`, `mint validate` (strict build + OpenAPI validity; replaces the deprecated `openapi-check`). Deploy is automatic via the Mintlify GitHub app on push to the default branch; PRs get preview deployments.
 - Install Mintlify's own authoring skill once per environment: `npx skills add https://mintlify.com/docs`.
 
 ## Keeping docs true (drift & police)
 
 - **OpenAPI snapshot** is review-gated, not a live pointer — so a new endpoint can't silently appear and leak. It is now a **clean verbatim copy** of the live spec (no local patching): U22-149 hardened the upstream `/v1` spec so it declares the absolute `servers` URL, a bearer `securitySchemes` + global `security`, the `score`/`compare` request bodies, and the `ErrorEnvelope` shape on every non-2xx response (so endpoint pages show real failure codes, not FastAPI's default validation error). Refresh by re-fetching `https://u22a8.ai/v1/openapi.json`, diffing, and reviewing — overwrite the file directly, don't hand-edit.
 - **Before publishing**, run `mint broken-links` and re-read the content-boundary list above — a deliberate no-leak pass is mandatory. There is no leak-scanner in this repo to lean on: its rule set is a manifest of internals, so it can't live in a public repo. The monorepo's `/police` sweep runs the scan against this checkout as a backstop — your manual pass is still the first line.
-- **Drift is caught on two repos.** This repo's CI (`.github/workflows/ci.yml`) is the publish gate for what *can* live here: `mint broken-links` and `mint openapi-check` block merge. Two checks run out of band in the monorepo's scheduled `/police` sweep, cross-repo, when this repo is checked out: (1) an **internal-leak scan** — the scanner is a private police asset, not committed here; (2) **OpenAPI freshness** (snapshot vs the live `/v1` spec) — the snapshot is review-gated and the live host is unreliable from CI. On either, police *fixes* drift — bringing pages in line with `/v1` / MCP-tool / schema changes and refreshing the snapshot (`scripts/openapi_freshness.py` → re-fetch → `scripts/apply_overlays.py`) — and lands it in a docs-repo PR for review (it does not auto-merge), filing a *Public Docs* Linear issue only for a net-new page or an unclear treatment. The PR review *is* the snapshot's review gate.
+- **Drift is caught on two repos.** This repo's CI (`.github/workflows/ci.yml`) is the publish gate for what *can* live here: `mint broken-links` and `mint validate` (strict build + OpenAPI validity) block merge. Two checks run out of band in the monorepo's scheduled `/police` sweep, cross-repo, when this repo is checked out: (1) an **internal-leak scan** — the scanner is a private police asset, not committed here; (2) **OpenAPI freshness** (snapshot vs the live `/v1` spec) — the snapshot is review-gated and the live host is unreliable from CI. On either, police *fixes* drift — bringing pages in line with `/v1` / MCP-tool / schema changes and refreshing the snapshot (`scripts/openapi_freshness.py` → re-fetch → `scripts/apply_overlays.py`) — and lands it in a docs-repo PR for review (it does not auto-merge), filing a *Public Docs* Linear issue only for a net-new page or an unclear treatment. The PR review *is* the snapshot's review gate.
 
 ## Working agreements
 

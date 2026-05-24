@@ -10,10 +10,10 @@ This site documents **public surfaces only** — the REST API, the MCP server, a
 npm i -g mint        # one-time: install the Mintlify CLI
 mint dev             # preview at http://localhost:3000
 mint broken-links    # validate internal links
-mint openapi-check api-reference/openapi.json   # validate the API spec
+mint validate        # strict build check + validate the OpenAPI spec
 ```
 
-CI (`.github/workflows/ci.yml`) runs `mint broken-links` and `mint openapi-check` on every PR and push to the default branch — both must pass before publish. Two further checks run out of band in the monorepo's scheduled `/police` sweep (when it has this repo checked out): an **internal-leak scan** (kept private — its rule set names internals) and **OpenAPI freshness** (snapshot vs the live spec, via `scripts/openapi_freshness.py`). Police fixes drift and refreshes the snapshot in a docs-sync PR for review. `scripts/openapi_freshness.py` is not sensitive and can be run locally.
+CI (`.github/workflows/ci.yml`) runs `mint broken-links` and `mint validate` on every PR and push to the default branch — both must pass before publish. Two further checks run out of band in the monorepo's scheduled `/police` sweep (when it has this repo checked out): an **internal-leak scan** (kept private — its rule set names internals) and **OpenAPI freshness** (snapshot vs the live spec, via `scripts/openapi_freshness.py`). Police fixes drift and refreshes the snapshot in a docs-sync PR for review. `scripts/openapi_freshness.py` is not sensitive and can be run locally.
 
 ## Structure
 

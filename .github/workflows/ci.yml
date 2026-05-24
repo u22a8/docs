@@ -32,5 +32,8 @@ jobs:
         run: npm i -g mint
       - name: Validate internal links
         run: mint broken-links
-      - name: Validate the OpenAPI snapshot
-        run: mint openapi-check api-reference/openapi.json
+      # `mint validate` runs the build in strict mode and auto-validates the
+      # OpenAPI spec referenced in docs.json (replaces the deprecated
+      # `openapi-check`). No path arg — it reads docs.json.
+      - name: Validate the docs build and OpenAPI snapshot
+        run: mint validate
