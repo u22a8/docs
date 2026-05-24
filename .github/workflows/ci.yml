@@ -1,0 +1,36 @@
+name: CI
+
+# Publish gate for the docs site: every check here must pass before content
+# reaches the default branch (and Mintlify's auto-deploy).
+#
+# Two checks that look like they belong here live elsewhere, on purpose:
+#   * Internal-leak scan — its rule set is a manifest of internals (providers,
+#     env vars, infra hosts, module paths), so it is NOT committed to this
+#     public repo. The monorepo's scheduled `/police` sweep runs it against the
+#     docs checkout instead. See CLAUDE.md § "Keeping docs true".
+#   * OpenAPI freshness (snapshot vs the live /v1 spec) — the snapshot is
+#     review-gated and the live host is unreliable from CI; `/police` owns it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mintlify:
+    name: Links and OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install Mintlify CLI
+        run: npm i -g mint
+      - name: Validate internal links
+        run: mint broken-links
+      - name: Validate the OpenAPI snapshot
+        run: mint openapi-check api-reference/openapi.json

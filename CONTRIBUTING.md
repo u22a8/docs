@@ -21,7 +21,10 @@ Before writing anything, read [`CLAUDE.md`](./CLAUDE.md). It carries the product
 ## Before opening a PR
 
 ```bash
-mint broken-links
+mint broken-links                               # internal links resolve
+mint openapi-check api-reference/openapi.json   # the snapshot is valid
 ```
 
-Then re-read the content-boundary list in `CLAUDE.md` and do a deliberate no-leak pass. Found an awkward API or naming while documenting? File it in the Linear **Public Docs** project — don't work around it in prose, and don't fix the product from here.
+CI runs these two checks and blocks the merge on either failure. **Leaks are caught separately**: the monorepo's `/police` sweep scans this repo for internal leaks (its rule set names internals, so it isn't kept here). That's a backstop, not your gate — re-read the content-boundary list in `CLAUDE.md` and do a deliberate no-leak pass before every PR. When in doubt, document the contract, not the mechanism.
+
+Found an awkward API or naming while documenting? File it in the Linear **Public Docs** project — don't work around it in prose, and don't fix the product from here.

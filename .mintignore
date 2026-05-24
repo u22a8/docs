@@ -6,6 +6,9 @@
 CLAUDE.md
 AGENTS.md
 
+# Build/CI tooling (not pages)
+scripts/
+
 # Draft content
 drafts/
 *.draft.mdx
