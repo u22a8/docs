@@ -48,7 +48,7 @@ Score this commit message against the `u22a8.commit-message` model and report ea
 
 ## Tools
 
-Tools are grouped by what they do. Reading and scoring tools work against any model a session can read; authoring and lifecycle tools require ownership of the model's namespace.
+Tools are grouped by what they do. Reading and scoring tools work against any model a session can read; `list_samples`, `list_versions`, and `get_version` additionally require ownership of the model's namespace; authoring and lifecycle tools always require ownership.
 
 ### Reading
 
@@ -57,9 +57,9 @@ Tools are grouped by what they do. Reading and scoring tools work against any mo
 | `list_models` | List models in a namespace (defaults to the public catalog). |
 | `get_model` | Fetch one model's metadata. |
 | `list_traits` | List a model's traits with sample counts and polarity labels. |
-| `list_samples` | List a model's training samples, filtered by trait. |
-| `list_versions` | List a model's versions, newest first. |
-| `get_version` | Fetch one version's snapshot by `vN` number or tag. |
+| `list_samples` | List a model's training samples, filtered by trait. Owner-only. |
+| `list_versions` | List a model's versions, newest first. Owner-only. |
+| `get_version` | Fetch one version's snapshot by `vN` number or tag. Owner-only. |
 
 ### Scoring
 
@@ -90,11 +90,12 @@ Authoring tools mutate a draft model. Trait and sample edits apply only while th
 |------|---------|
 | `train` | Train a draft model, or re-tune a ready one. Runs asynchronously. |
 | `discover_traits` | Derive intrinsic traits from a draft model's samples. Runs asynchronously. |
+| `synthesize_samples` | Generate labeled samples from a draft model's trait definitions. Runs asynchronously. |
 | `tag_version` | Pin a tag to the active version. |
 | `untag_version` | Remove a tag. |
 | `activate_version` | Point the model at a version — roll back or pin. |
 
-`train` and `discover_traits` return once the run is enqueued; the model reports a `busy` state until the run completes. Poll `get_model` for the state rather than waiting on the call.
+`train`, `discover_traits`, and `synthesize_samples` return once the run is enqueued; the model reports a `busy` state until the run completes. Poll `get_model` for the state rather than waiting on the call.
 
 ## Models as resources
 

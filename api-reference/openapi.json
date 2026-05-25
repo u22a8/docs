@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "u22a8.ai API · v1",
+    "title": "u22a8.ai API \u00b7 v1",
     "summary": "Versioned, resource-shaped REST API for scoring models.",
-    "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key — `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). Within /v1, only `/v1/health` and the docs are open.",
+    "description": "Versioned REST surface for u22a8.ai. Resource shape: `/v1/models/{handle}/...`. One error envelope, request id on every response, cursor-based pagination, OpenAPI 3.1.\n\n## Authentication\n\nEvery endpoint requires a valid API key \u2014 `Authorization: Bearer <key>`. Issue keys in the platform console. A key authors only in namespaces it owns and reads its own namespaces plus the public ones (`u22a8` / `live` / `bench`). Within /v1, only `/v1/health` and the docs are open.",
     "version": "1.0.0"
   },
   "servers": [
@@ -19,7 +19,7 @@
           "System"
         ],
         "summary": "Liveness check",
-        "description": "DB connectivity check — same probe as the top-level ``/health``.",
+        "description": "DB connectivity check \u2014 same probe as the top-level ``/health``.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -63,7 +63,7 @@
           "Models"
         ],
         "summary": "List models",
-        "description": "List models, ordered by handle. Returns a cursor-paginated page even when the result fits — clients should treat the shape as stable and opaque-cursor.\n\nWithout ``namespace``, the listing is scoped to the public ``u22a8`` namespace. Pass ``namespace=<name>`` to list elsewhere — it must be a namespace your key owns, or one of the public ones. Filter by ``state`` (``draft|busy|ready|failed|archived``) and ``kind`` (``scoring`` only at launch).",
+        "description": "List models, ordered by handle. Returns a cursor-paginated page even when the result fits \u2014 clients should treat the shape as stable and opaque-cursor.\n\nWithout ``namespace``, the listing is scoped to the public ``u22a8`` namespace. Pass ``namespace=<name>`` to list elsewhere \u2014 it must be a namespace your key owns, or one of the public ones. Filter by ``state`` (``draft|busy|ready|failed|archived``) and ``kind`` (``scoring`` only at launch).",
         "operationId": "list_models_models_get",
         "parameters": [
           {
@@ -174,8 +174,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -194,6 +204,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -204,28 +224,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -256,7 +256,7 @@
           "Models"
         ],
         "summary": "Create a model",
-        "description": "Create a draft model. ``handle`` is required and must be in a namespace your key owns — there is no auto-minting. ``kind`` is reserved-now and only accepts ``scoring`` at launch.",
+        "description": "Create a draft model. ``handle`` is required and must be in a namespace your key owns \u2014 there is no auto-minting. ``kind`` is reserved-now and only accepts ``scoring`` at launch.",
         "operationId": "create_model_models_post",
         "requestBody": {
           "required": true,
@@ -299,8 +299,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -329,6 +339,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -339,28 +359,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -393,7 +393,7 @@
           "Models"
         ],
         "summary": "Get a model",
-        "description": "Returns the model's structured detail as JSON. Set `Accept: text/markdown` to fetch the **model card** instead — the same markdown the MCP server exposes as the model's resource. Reading a model is never gated by its additional terms; the card is how a caller reviews those terms.",
+        "description": "Returns the model's structured detail as JSON. Set `Accept: text/markdown` to fetch the **model card** instead \u2014 the same markdown the MCP server exposes as the model's resource. Reading a model is never gated by its additional terms; the card is how a caller reviews those terms.",
         "operationId": "get_model_detail_models__handle__get",
         "parameters": [
           {
@@ -447,8 +447,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -467,6 +477,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -477,28 +497,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -526,7 +526,7 @@
           }
         ],
         "x-mint": {
-          "content": "Returns JSON by default. Set `Accept: text/markdown` to fetch the **model card** — a human-readable summary of the model, its traits, and any additional terms. It is the same markdown the MCP server serves as the model's resource."
+          "content": "Returns JSON by default. Set `Accept: text/markdown` to fetch the **model card** \u2014 a human-readable summary of the model, its traits, and any additional terms. It is the same markdown the MCP server serves as the model's resource."
         }
       },
       "patch": {
@@ -592,8 +592,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -622,6 +632,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -632,28 +652,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -676,7 +676,7 @@
           }
         ],
         "x-mint": {
-          "content": "Patches model metadata; omitted fields are left unchanged. Lifecycle state is not patchable — use `POST …/train` to move a draft to `ready` and `DELETE` to archive."
+          "content": "Patches model metadata; omitted fields are left unchanged. Lifecycle state is not patchable \u2014 use `POST \u2026/train` to move a draft to `ready` and `DELETE` to archive."
         }
       },
       "delete": {
@@ -684,7 +684,7 @@
           "Models"
         ],
         "summary": "Delete a model",
-        "description": "Archive a model: it moves to the ``archived`` state and stops serving on /v1. Samples and version history are retained. Idempotent — archiving an already-archived model returns 200. Permanent deletion is handled through account deletion, not this endpoint.",
+        "description": "Archive a model: it moves to the ``archived`` state and stops serving on /v1. Samples and version history are retained. Idempotent \u2014 archiving an already-archived model returns 200. Permanent deletion is handled through account deletion, not this endpoint.",
         "operationId": "delete_model_models__handle__delete",
         "parameters": [
           {
@@ -733,8 +733,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -753,6 +763,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -763,28 +783,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -863,8 +863,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -883,6 +893,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -893,28 +913,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1001,8 +1001,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1031,6 +1041,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1041,28 +1061,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1085,7 +1085,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
+          "content": "<Note>Draft-only \u2014 trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -1095,7 +1095,7 @@
           "Models"
         ],
         "summary": "Discover traits",
-        "description": "Derive intrinsic traits from the model's labelled samples and attach them. Draft-only. Returns 202 with a run id once enqueued; the model enters the ``busy`` state and returns to ``draft`` with the new traits visible on ``GET …/traits`` when discovery completes. A repeat of an in-flight or completed run with the same samples and effort returns 409 with the existing run id in ``X-Run-Id``.",
+        "description": "Derive intrinsic traits from the model's labelled samples and attach them. Draft-only. Returns 202 with a run id once enqueued; the model enters the ``busy`` state and returns to ``draft`` with the new traits visible on ``GET \u2026/traits`` when discovery completes. A repeat of an in-flight or completed run with the same samples and effort returns 409 with the existing run id in ``X-Run-Id``.",
         "operationId": "discover_traits_models__handle__traits_discover_post",
         "parameters": [
           {
@@ -1174,8 +1174,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1204,6 +1204,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1216,16 +1226,6 @@
           },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1248,7 +1248,7 @@
           }
         ],
         "x-mint": {
-          "content": "Derives intrinsic traits from the model's samples and attaches them. Draft-only and asynchronous: it returns `202` with a run id, the model enters `busy`, and the new traits appear on `GET …/traits` once it returns to `draft`. Poll `GET …/models/{handle}` for the state — there is no run resource to fetch."
+          "content": "Derives intrinsic traits from the model's samples and attaches them. Draft-only and asynchronous: it returns `202` with a run id, the model enters `busy`, and the new traits appear on `GET \u2026/traits` once it returns to `draft`. Poll `GET \u2026/models/{handle}` for the state \u2014 there is no run resource to fetch."
         }
       }
     },
@@ -1258,7 +1258,7 @@
           "Models"
         ],
         "summary": "Get one trait",
-        "description": "One trait's metadata. Includes its ``kind`` and, for discovered (intrinsic) traits, the discovery diagnostics — ``discrimination``, ``explained_variance``, and ``anchor_sample_ids``. ``key`` matches by trait key or name.",
+        "description": "One trait's metadata. Includes its ``kind`` and, for discovered (intrinsic) traits, the discovery diagnostics \u2014 ``discrimination``, ``explained_variance``, and ``anchor_sample_ids``. ``key`` matches by trait key or name.",
         "operationId": "get_trait_models__handle__traits__key__get",
         "parameters": [
           {
@@ -1316,8 +1316,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1336,6 +1346,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1346,28 +1366,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1462,8 +1462,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1492,6 +1502,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1502,28 +1522,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1546,7 +1546,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
+          "content": "<Note>Draft-only \u2014 trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       },
       "delete": {
@@ -1611,8 +1611,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1631,6 +1641,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1641,28 +1661,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1685,7 +1685,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
+          "content": "<Note>Draft-only \u2014 trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -1754,8 +1754,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1784,8 +1794,8 @@
               }
             }
           },
-          "404": {
-            "description": "No such model, trait, sample, or version.",
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1794,8 +1804,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
+          "404": {
+            "description": "No such model, trait, sample, or version.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1813,23 +1823,13 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         },
         "x-codeSamples": [
           {
             "lang": "bash",
             "label": "cURL",
-            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/samples \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"samples\": [{\"trait\": \"warmth\", \"text\": \"Happy to help — let us sort this out together.\", \"quality\": 1.0}, {\"trait\": \"warmth\", \"text\": \"Request denied. Refer to the policy.\", \"quality\": 0.0}]}'"
+            "source": "curl -X POST https://u22a8.ai/v1/models/acme.support-tone/samples \\\n  -H \"Authorization: Bearer $U22A8_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"samples\": [{\"trait\": \"warmth\", \"text\": \"Happy to help \u2014 let us sort this out together.\", \"quality\": 1.0}, {\"trait\": \"warmth\", \"text\": \"Request denied. Refer to the policy.\", \"quality\": 0.0}]}'"
           },
           {
             "lang": "python",
@@ -1838,7 +1838,7 @@
           }
         ],
         "x-mint": {
-          "content": "Each sample labels one trait: `quality` `1.0` is the positive pole, `0.0` the negative. Up to 500 samples per request.\n\n<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
+          "content": "Each sample labels one trait: `quality` `1.0` is the positive pole, `0.0` the negative. Up to 500 samples per request.\n\n<Note>Draft-only \u2014 trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       },
       "get": {
@@ -1939,8 +1939,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1959,6 +1969,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -1969,28 +1989,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2012,6 +2012,154 @@
             "source": "import os, requests\n\nr = requests.get(\n    \"https://u22a8.ai/v1/models/acme.support-tone/samples\",\n    headers={\"Authorization\": f\"Bearer {os.environ['U22A8_API_KEY']}\"},\n    params={\"trait\": \"warmth\", \"limit\": 100},\n)"
           }
         ]
+      }
+    },
+    "/models/{handle}/samples/synthesize": {
+      "post": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Synthesize samples",
+        "description": "Generate labeled samples from the model's trait definitions and attach them tagged ``provenance='synthesized'`` (DR 037). Draft-only. Returns 202 + run id on enqueue; the model enters ``busy`` (``last_operation.kind='synthesize'``) and returns to ``draft`` with the new samples visible on ``GET /samples`` at completion. 409 + ``X-Run-Id`` on an in-flight idempotency hit (same sample set + synth_type + effort).",
+        "operationId": "synthesize_samples_models__handle__samples_synthesize_post",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Model handle, e.g. 'u22a8.technical-writing'.",
+              "examples": [
+                "u22a8.technical-writing"
+              ],
+              "title": "Handle"
+            },
+            "description": "Model handle, e.g. 'u22a8.technical-writing'."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "description": "Matching synthesis already queued/running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request failed validation, or the handle is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An upstream dependency (database or model service) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the size limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such model, trait, sample, or version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/models/{handle}/samples/{sample_id}": {
@@ -2077,8 +2225,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2097,6 +2255,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2107,28 +2275,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2151,7 +2299,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Note>Draft-only — trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
+          "content": "<Note>Draft-only \u2014 trait and sample edits apply only while the model is in the `draft` state. A trained (`ready`) model returns `409`; the samples and traits are frozen into its versions.</Note>"
         }
       }
     },
@@ -2240,8 +2388,8 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2270,6 +2418,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2282,16 +2440,6 @@
           },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2314,7 +2462,7 @@
           }
         ],
         "x-mint": {
-          "content": "Asynchronous: a first train from `draft` returns `202` with a run id and moves the model through `busy` to `ready`. Poll `GET …/models/{handle}` for the state. From a `ready` model, pass `reoptimize_params: true` to force a fresh parameter search; otherwise routine retraining on new samples happens automatically."
+          "content": "Asynchronous: a first train from `draft` returns `202` with a run id and moves the model through `busy` to `ready`. Poll `GET \u2026/models/{handle}` for the state. From a `ready` model, pass `reoptimize_params: true` to force a fresh parameter search; otherwise routine retraining on new samples happens automatically."
         }
       }
     },
@@ -2378,8 +2526,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2408,6 +2566,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2418,28 +2586,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2557,8 +2705,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2587,6 +2745,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2597,28 +2765,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2641,7 +2789,7 @@
           }
         ],
         "x-mint": {
-          "content": "Scores a baseline `a` against a candidate `b` and returns the per-trait delta plus the overall improvement (`b.composite − a.composite`). URLs in `a` and `b` are auto-fetched. Set `Accept: text/plain` for a side-by-side rendering."
+          "content": "Scores a baseline `a` against a candidate `b` and returns the per-trait delta plus the overall improvement (`b.composite \u2212 a.composite`). URLs in `a` and `b` are auto-fetched. Set `Accept: text/plain` for a side-by-side rendering."
         }
       }
     },
@@ -2651,7 +2799,7 @@
           "Extract"
         ],
         "summary": "Fetch a URL and extract its text",
-        "description": "Fetch a URL and return its extracted text — the same readable text the score endpoint scores when given a URL. Includes a content hash for deduplication.",
+        "description": "Fetch a URL and return its extracted text \u2014 the same readable text the score endpoint scores when given a URL. Includes a content hash for deduplication.",
         "operationId": "extract_extract_post",
         "requestBody": {
           "content": {
@@ -2694,8 +2842,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2724,6 +2882,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2734,28 +2902,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2865,8 +3013,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2885,6 +3043,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -2895,28 +3063,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3004,8 +3152,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3024,6 +3182,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -3034,28 +3202,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3146,8 +3294,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3166,6 +3324,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -3176,28 +3344,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3285,8 +3433,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3305,6 +3463,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -3315,28 +3483,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3366,7 +3514,7 @@
           "Versions"
         ],
         "summary": "Activate a version (rollback / pin)",
-        "description": "Activate a version — point the model at the resolved version so it serves scores. Use it to roll back or pin. Non-destructive: new samples keep accumulating and automatic retraining keeps minting new versions regardless of which one is active.",
+        "description": "Activate a version \u2014 point the model at the resolved version so it serves scores. Use it to roll back or pin. Non-destructive: new samples keep accumulating and automatic retraining keeps minting new versions regardless of which one is active.",
         "operationId": "activate_version_models__handle__versions_active_put",
         "parameters": [
           {
@@ -3425,8 +3573,18 @@
               }
             }
           },
-          "403": {
-            "description": "The key lacks namespace ownership or the required scope.",
+          "400": {
+            "description": "Malformed request \u2014 a bad parameter, value, or empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle conflict \u2014 model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3455,6 +3613,16 @@
               }
             }
           },
+          "403": {
+            "description": "The key lacks namespace ownership or the required scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such model, trait, sample, or version.",
             "content": {
@@ -3465,28 +3633,8 @@
               }
             }
           },
-          "409": {
-            "description": "Lifecycle conflict — model busy, a draft-only mutation on a non-draft model, or an idempotent retry of an in-flight run.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Missing or invalid API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed request — a bad parameter, value, or empty body.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3509,7 +3657,7 @@
           }
         ],
         "x-mint": {
-          "content": "Points the model at the chosen version so it serves scores — use it to roll back or pin. Send **exactly one** of `version` (a `vN` number) or `tag`. Non-destructive: new samples keep accumulating and automatic retraining keeps minting versions regardless of which one is active."
+          "content": "Points the model at the chosen version so it serves scores \u2014 use it to roll back or pin. Send **exactly one** of `version` (a `vN` number) or `tag`. Non-destructive: new samples keep accumulating and automatic retraining keeps minting versions regardless of which one is active."
         }
       }
     }
@@ -3601,7 +3749,7 @@
           "improvement": {
             "type": "integer",
             "title": "Improvement",
-            "description": "b.composite − a.composite, in points."
+            "description": "b.composite \u2212 a.composite, in points."
           },
           "per_trait": {
             "additionalProperties": {
@@ -3625,7 +3773,7 @@
           "handle": {
             "type": "string",
             "title": "Handle",
-            "description": "Namespaced handle, ``<namespace>.<name>`` (e.g. ``u22a8.foo``). Required — there is no auto-minting. The namespace must be one your key owns. Want a random handle? Generate the string yourself.",
+            "description": "Namespaced handle, ``<namespace>.<name>`` (e.g. ``u22a8.foo``). Required \u2014 there is no auto-minting. The namespace must be one your key owns. Want a random handle? Generate the string yourself.",
             "examples": [
               "u22a8.my-model"
             ]
@@ -3651,7 +3799,7 @@
           "kind": {
             "type": "string",
             "title": "Kind",
-            "description": "Model kind. Only ``scoring`` is accepted at launch — future kinds (classification/conformance/retrieval) land additively.",
+            "description": "Model kind. Only ``scoring`` is accepted at launch \u2014 future kinds (classification/conformance/retrieval) land additively.",
             "default": "scoring"
           },
           "additional_terms": {
@@ -3740,7 +3888,7 @@
         },
         "type": "object",
         "title": "DiscoverRequest",
-        "description": "``POST /v1/models/{handle}/traits/discover`` body. Effort-only.\n\nDraft-only. Pools the model's labelled samples, derives intrinsic trait\naxes, and attaches them as ``intrinsic`` traits. Responds like train —\n202 + run id on enqueue, 409 + ``X-Run-Id`` on a matching in-flight run."
+        "description": "``POST /v1/models/{handle}/traits/discover`` body. Effort-only.\n\nDraft-only. Pools the model's labelled samples, derives intrinsic trait\naxes, and attaches them as ``intrinsic`` traits. Responds like train \u2014\n202 + run id on enqueue, 409 + ``X-Run-Id`` on a matching in-flight run."
       },
       "ExtractRequest": {
         "properties": {
@@ -3830,7 +3978,7 @@
           "state": {
             "type": "string",
             "title": "State",
-            "description": "Lifecycle state: ``draft``, ``busy``, ``ready``, ``failed``, or ``archived``. ``busy`` is the transient state while an asynchronous operation (training, discovery, retraining) runs — see ``last_operation`` for which one.",
+            "description": "Lifecycle state: ``draft``, ``busy``, ``ready``, ``failed``, or ``archived``. ``busy`` is the transient state while an asynchronous operation (training, discovery, retraining) runs \u2014 see ``last_operation`` for which one.",
             "default": "ready",
             "examples": [
               "draft",
@@ -3883,7 +4031,7 @@
               }
             ],
             "title": "Version No",
-            "description": "Version number of the active snapshot — the integer behind ``vN``. Null before the first train."
+            "description": "Version number of the active snapshot \u2014 the integer behind ``vN``. Null before the first train."
           },
           "version_tags": {
             "items": {
@@ -4166,6 +4314,12 @@
             "type": "number",
             "title": "Quality"
           },
+          "provenance": {
+            "type": "string",
+            "title": "Provenance",
+            "description": "How the sample entered the model (DR 037): ``authored`` (manual), ``synthesized`` (the synthesize transition), or ``score_feedback`` (captured from ``POST /score``).",
+            "default": "authored"
+          },
           "source_url": {
             "anyOf": [
               {
@@ -4268,7 +4422,7 @@
         },
         "type": "object",
         "title": "ScoreMetadata",
-        "description": "Audit and lifecycle metadata attached to a score response.\n\n``version_id`` is the active snapshot the score served from, formatted\nas ``\"vN\"`` to match the pinned-handle form (``handle@vN``); ``null``\nbefore the first train. ``sample_ids`` is populated only when the\nrequest included a ``feedback`` block — one id per trait whose feedback\nwas captured."
+        "description": "Audit and lifecycle metadata attached to a score response.\n\n``version_id`` is the active snapshot the score served from, formatted\nas ``\"vN\"`` to match the pinned-handle form (``handle@vN``); ``null``\nbefore the first train. ``sample_ids`` is populated only when the\nrequest included a ``feedback`` block \u2014 one id per trait whose feedback\nwas captured."
       },
       "ScoreResponse": {
         "properties": {
@@ -4322,6 +4476,31 @@
         ],
         "title": "ScoreResponse"
       },
+      "SynthesizeRequest": {
+        "properties": {
+          "synth_type": {
+            "type": "string",
+            "title": "Synth Type",
+            "description": "Synthesis intent (DR 037). Hosted strategies: ``from_traits`` (cold-start exemplars from trait semantics) and ``diversify`` (voice-preserving variations of seed samples). ``enrich`` is engine-internal (held-out eval pool for bundling) and is rejected (422) on this surface.",
+            "default": "from_traits"
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "DR 031 effort dial \u2014 low|medium|high|xhigh|max. Controls synthesis knobs (synth model, sample counts, thinking budget). null uses the default effort level."
+          }
+        },
+        "type": "object",
+        "title": "SynthesizeRequest",
+        "description": "Body for synthesizing samples on a draft model (DR 037).\n\nDraft-only \u2014 the generative twin of discovery. Reads the model's trait definitions, generates labeled exemplars through the shared synthesis engine, and attaches them as samples tagged `provenance='synthesized'`. Returns 202 with a run id on enqueue; 409 with `X-Run-Id` on an in-flight idempotency hit."
+      },
       "TrainRequest": {
         "properties": {
           "effort": {
@@ -4345,7 +4524,7 @@
         },
         "type": "object",
         "title": "TrainRequest",
-        "description": "``POST /v1/models/{handle}/train`` body. All fields optional.\n\nFrom ``draft``, starts a first training pass (the model moves to\n``busy``, then ``ready``). From ``ready`` with\n``reoptimize_params=True``, runs a fresh parameter search. From\n``ready`` without it, a no-op — routine retraining on new samples runs\nautomatically."
+        "description": "``POST /v1/models/{handle}/train`` body. All fields optional.\n\nFrom ``draft``, starts a first training pass (the model moves to\n``busy``, then ``ready``). From ``ready`` with\n``reoptimize_params=True``, runs a fresh parameter search. From\n``ready`` without it, a no-op \u2014 routine retraining on new samples runs\nautomatically."
       },
       "TrainResponse": {
         "properties": {
@@ -4754,7 +4933,7 @@
               }
             ],
             "title": "Zero Data Retention",
-            "description": "Toggle zero-data-retention. Turning it on purges existing samples. Turning it off applies going forward only — earlier purges are not reversed."
+            "description": "Toggle zero-data-retention. Turning it on purges existing samples. Turning it off applies going forward only \u2014 earlier purges are not reversed."
           },
           "version_retention_policy": {
             "anyOf": [
@@ -4779,7 +4958,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "UpdateModelRequest",
-        "description": "``PATCH /v1/models/{handle}`` body. Missing fields mean no change.\n\n``state`` is intentionally **not** patchable: move a model with\n``POST /train`` (``draft → ready``) or ``DELETE`` (archive), never a\n``PATCH`` override. Unknown fields (including ``state``) are rejected so\nthe contract is explicit rather than a silent no-op."
+        "description": "``PATCH /v1/models/{handle}`` body. Missing fields mean no change.\n\n``state`` is intentionally **not** patchable: move a model with\n``POST /train`` (``draft \u2192 ready``) or ``DELETE`` (archive), never a\n``PATCH`` override. Unknown fields (including ``state``) are rejected so\nthe contract is explicit rather than a silent no-op."
       },
       "UpdateTraitRequest": {
         "properties": {

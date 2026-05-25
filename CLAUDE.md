@@ -60,7 +60,7 @@ The **public programmatic surface is HTTP**: the REST API and the product MCP se
 | **Authoring schemas** | `model.yaml` + JSONL samples — the published training-input contract (DR 009), at `u22a8.ai/schemas`. | The published JSON Schemas |
 | **TypeScript SDK** | Hand-written HTTP client for `/v1` — **in progress (U22-57)**, not shipped. Document when it lands. | — |
 
-**MCP tools** (group them this way in docs): *reading* — `list_models`, `get_model`, `list_traits`, `list_samples`, `list_versions`, `get_version`; *scoring* — `score`, `compare`, `extract`; *authoring* (draft-only) — `create_model`, `update_model`, `delete_model`, `add_traits`, `update_trait`, `delete_trait`, `add_samples`, `delete_sample`; *lifecycle* — `train`, `discover_traits`, `tag_version`, `untag_version`, `activate_version`.
+**MCP tools** (group them this way in docs): *reading* — `list_models`, `get_model`, `list_traits`, `list_samples`\*, `list_versions`\*, `get_version`\* (\*owner-only); *scoring* — `score`, `compare`, `extract`; *authoring* (draft-only) — `create_model`, `update_model`, `delete_model`, `add_traits`, `update_trait`, `delete_trait`, `add_samples`, `delete_sample`; *lifecycle* — `train`, `discover_traits`, `synthesize_samples`, `tag_version`, `untag_version`, `activate_version`.
 
 **Authentication.** Developers issue an API key in the console and send `Authorization: Bearer <key>`. Keys carry a scope — **`scoring`** (read + score/compare) or **`authoring`** (full). A key authors only in namespaces it owns, and reads its own plus the public namespaces (`u22a8`, `live`, `bench`). MCP uses OAuth via WorkOS rather than a static key.
 
